@@ -1,5 +1,6 @@
 # Virtual Environment
 venv/
+.venv*/
 env/
 ENV/
 
@@ -28,7 +29,7 @@ coverage.xml
 pytest_cache/
 
 # Environments
-# .env
+.env
 .venv
 .python-version
 
@@ -37,3 +38,6 @@ pytest_cache/
 .vscode/
 *.swp
 *.swo
+
+# UV package manager
+uv.lock

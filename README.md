@@ -86,6 +86,26 @@ Some tests for environment and inventory management are currently skipped due to
 
 ### Installation
 
+#### Option 1: Using uv (Recommended by MCP)
+
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/semaphore-mcp.git
+cd semaphore-mcp
+
+# Install uv if you don't have it already
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Create a virtual environment and install the package
+uv venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# Install the package in development mode
+uv pip install -e .
+```
+
+#### Option 2: Using pip
+
 ```bash
 # Clone the repository
 git clone https://github.com/yourusername/semaphore-mcp.git
@@ -115,6 +135,48 @@ MCP_LOG_LEVEL=INFO  # Optional, defaults to INFO
 # Run the MCP server
 python scripts/start_server.py
 ```
+
+### Claude Desktop Client Integration
+
+To use this MCP with the Claude Desktop Client:
+
+1. First run the setup script to create a dedicated virtual environment with all dependencies:
+
+```bash
+./scripts/setup_for_claude.sh
+```
+
+2. Then update your `claude_desktop_config.json` file (typically located at `~/.config/claude-desktop/claude_desktop_config.json`) with the following configuration:
+
+```json
+{
+  "mcpServers": {
+    "semaphore": {
+      "command": "bash",
+      "args": [
+        "-c",
+        "cd /Users/colin/Projects/homelab/semaphore-mcp && /Users/colin/.local/bin/uv pip install -e . mcp && /Users/colin/.local/bin/uv run scripts/start_server.py"
+      ]
+    }
+  }
+}
+```
+
+Make sure to:
+1. Replace `/path/to/semaphore-mcp` with the absolute path to your semaphore-mcp directory
+2. Run the `setup_for_claude.sh` script before configuring Claude Desktop
+3. Ensure your `.env` file with SEMAPHORE_API_TOKEN is properly configured
+
+#### Verifying Claude Desktop Setup
+
+To verify that your setup works correctly before using it with Claude Desktop:
+
+```bash
+# Test the command exactly as Claude Desktop would run it
+bash -c "cd /Users/colin/Projects/homelab/semaphore-mcp && /Users/colin/.local/bin/uv pip install -e . mcp && /Users/colin/.local/bin/uv run scripts/start_server.py"
+```
+
+If configured correctly, the server should start without errors. You can then press Ctrl+C to stop it. After verifying, restart Claude Desktop to apply the configuration changes.
 
 ### Available MCP Tools
 
