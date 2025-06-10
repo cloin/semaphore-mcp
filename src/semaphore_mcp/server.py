@@ -47,7 +47,7 @@ class SemaphoreMCPServer:
         self.register_tools()
     
     def register_tools(self):
-        """Register all available tools."""
+        """Register MCP tools for SemaphoreUI."""
         self.mcp.tool()(self.list_projects)
         self.mcp.tool()(self.get_project)
         self.mcp.tool()(self.list_templates)
@@ -56,6 +56,7 @@ class SemaphoreMCPServer:
         self.mcp.tool()(self.get_task)
         self.mcp.tool()(self.run_task)
         self.mcp.tool()(self.get_task_output)
+        self.mcp.tool()(self.get_latest_failed_task)
         
         # Skip environment and inventory operations as they're unstable
         # These can be re-enabled when the API compatibility issues are resolved
@@ -129,20 +130,87 @@ class SemaphoreMCPServer:
             logger.error(f"Error getting template {template_id}: {str(e)}")
             raise RuntimeError(f"Error getting template: {str(e)}")
     
-    async def list_tasks(self, project_id: int) -> Dict[str, Any]:
-        """List all tasks for a project.
+    async def list_tasks(self, project_id: int, limit: int = 5) -> Dict[str, Any]:
+        """List tasks for a project with a default limit of 5 to avoid overloading context windows.
+
+        Args:
+            project_id: ID of the project
+            limit: Maximum number of tasks to return (default: 5)
+
+        Returns:
+            A list of tasks for the project, limited by the specified count
+        """
+        try:
+            # Warn if a large number of tasks is requested
+            if limit > 5:
+                logger.warning(f"Requesting {limit} tasks may overload the context window")
+            
+            # Get all tasks from the API
+            api_response = self.semaphore.list_tasks(project_id)
+            
+            # Handle different response formats (list or dict with 'tasks' key)
+            all_tasks = []
+            if isinstance(api_response, list):
+                all_tasks = api_response
+            elif isinstance(api_response, dict) and "tasks" in api_response:
+                all_tasks = api_response.get("tasks", [])
+            
+            # Sort tasks by creation time (newest first)
+            sorted_tasks = sorted(
+                all_tasks, 
+                key=lambda x: x.get("created", "") if isinstance(x, dict) else "", 
+                reverse=True
+            )
+            
+            # Return only the limited number of tasks
+            limited_tasks = sorted_tasks[:limit]
+            
+            return {
+                "tasks": limited_tasks,
+                "total": len(all_tasks),
+                "shown": len(limited_tasks),
+                "note": f"Showing {len(limited_tasks)} of {len(all_tasks)} tasks (sorted by newest first)"
+            }
+        except Exception as e:
+            logger.error(f"Error listing tasks for project {project_id}: {str(e)}")
+            raise RuntimeError(f"Error listing tasks: {str(e)}")
+            
+    async def get_latest_failed_task(self, project_id: int) -> Dict[str, Any]:
+        """Get the most recent failed task for a project.
 
         Args:
             project_id: ID of the project
 
         Returns:
-            A list of tasks for the project
+            The most recent failed task or a message if no failed tasks are found
         """
         try:
-            return self.semaphore.list_tasks(project_id)
+            # Get all tasks from the API
+            api_response = self.semaphore.list_tasks(project_id)
+            
+            # Handle different response formats (list or dict with 'tasks' key)
+            tasks = []
+            if isinstance(api_response, list):
+                tasks = api_response
+            elif isinstance(api_response, dict) and "tasks" in api_response:
+                tasks = api_response.get("tasks", [])
+            
+            # Filter for failed tasks and sort by creation time (newest first)
+            failed_tasks = [t for t in tasks if isinstance(t, dict) and t.get("status") == "error"]
+            sorted_failed = sorted(
+                failed_tasks, 
+                key=lambda x: x.get("created", ""), 
+                reverse=True
+            )
+            
+            if not sorted_failed:
+                return {"message": "No failed tasks found for this project"}
+                
+            # Return the most recent failed task
+            return {"task": sorted_failed[0]}
         except Exception as e:
-            logger.error(f"Error listing tasks for project {project_id}: {str(e)}")
-            raise RuntimeError(f"Error listing tasks: {str(e)}")
+            logger.error(f"Error getting latest failed task for project {project_id}: {str(e)}")
+            raise RuntimeError(f"Error getting latest failed task: {str(e)}")
     
     async def get_task(self, project_id: int, task_id: int) -> Dict[str, Any]:
         """Get details of a specific task.
