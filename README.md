@@ -163,9 +163,8 @@ To use this MCP with the Claude Desktop Client:
 ```
 
 Make sure to:
-1. Replace `/path/to/semaphore-mcp` with the absolute path to your semaphore-mcp directory
-2. Run the `setup_for_claude.sh` script before configuring Claude Desktop
-3. Ensure your `.env` file with SEMAPHORE_API_TOKEN is properly configured
+1. Replace the paths with the absolute paths to your semaphore-mcp directory and uv installation
+2. Ensure your `.env` file with SEMAPHORE_API_TOKEN is properly configured in the semaphore-mcp directory
 
 #### Verifying Claude Desktop Setup
 
