@@ -40,7 +40,8 @@ class TestMCPServer:
             'list_tasks',
             'get_task',
             'run_task',
-            'get_task_output'
+            'get_task_output',
+            'get_latest_failed_task'
         ]
         
         # Check if each expected tool is a callable method on the server
@@ -79,6 +80,102 @@ class TestMCPServer:
         with pytest.raises((AttributeError, ValueError)):
             # Try to access a non-existent tool
             await getattr(server, "invalid_tool")()
+            
+    @pytest.mark.asyncio
+    async def test_list_tasks_default_limit(self, server):
+        """Test list_tasks with default limit of 5."""
+        try:
+            # Get a project ID to work with
+            projects = await server.list_projects()
+            if not projects or (isinstance(projects, list) and not projects):
+                pytest.skip("No projects available for task tests")
+                
+            project_id = projects[0]["id"] if isinstance(projects, list) else projects.get("projects", [])[0]["id"] if "projects" in projects else None
+            if not project_id:
+                pytest.skip("Could not determine project ID")
+                
+            # Call the list_tasks function with default limit
+            result = await server.list_tasks(project_id)
+            
+            # Verify the response structure
+            assert isinstance(result, dict), "Expected result to be a dict"
+            assert "tasks" in result, "Expected 'tasks' key in response"
+            assert "total" in result, "Expected 'total' key in response"
+            assert "shown" in result, "Expected 'shown' key in response"
+            assert "note" in result, "Expected 'note' key in response"
+            
+            # Verify limit is enforced
+            assert len(result["tasks"]) <= 5, "Expected at most 5 tasks with default limit"
+            
+            # Verify shown and total counts
+            assert result["shown"] == len(result["tasks"]), "'shown' count should match actual tasks returned"
+            assert result["total"] >= result["shown"], "'total' should be at least 'shown'"
+            
+        except Exception as e:
+            pytest.fail(f"Test failed: {str(e)}")
+    
+    @pytest.mark.asyncio
+    async def test_list_tasks_custom_limit(self, server):
+        """Test list_tasks with custom limit."""
+        try:
+            # Get a project ID to work with
+            projects = await server.list_projects()
+            if not projects or (isinstance(projects, list) and not projects):
+                pytest.skip("No projects available for task tests")
+                
+            project_id = projects[0]["id"] if isinstance(projects, list) else projects.get("projects", [])[0]["id"] if "projects" in projects else None
+            if not project_id:
+                pytest.skip("Could not determine project ID")
+                
+            # Call the list_tasks function with custom limit of 2
+            custom_limit = 2
+            result = await server.list_tasks(project_id, limit=custom_limit)
+            
+            # Verify the response structure
+            assert isinstance(result, dict), "Expected result to be a dict"
+            assert "tasks" in result, "Expected 'tasks' key in response"
+            
+            # Verify custom limit is enforced
+            assert len(result["tasks"]) <= custom_limit, f"Expected at most {custom_limit} tasks"
+            
+        except Exception as e:
+            pytest.fail(f"Test failed: {str(e)}")
+    
+    @pytest.mark.asyncio
+    async def test_get_latest_failed_task(self, server):
+        """Test get_latest_failed_task."""
+        try:
+            # Get a project ID to work with
+            projects = await server.list_projects()
+            if not projects or (isinstance(projects, list) and not projects):
+                pytest.skip("No projects available for task tests")
+                
+            project_id = projects[0]["id"] if isinstance(projects, list) else projects.get("projects", [])[0]["id"] if "projects" in projects else None
+            if not project_id:
+                pytest.skip("Could not determine project ID")
+                
+            # Call the get_latest_failed_task function
+            result = await server.get_latest_failed_task(project_id)
+            
+            # Verify the response structure
+            assert isinstance(result, dict), "Expected result to be a dict"
+            
+            # Should either have a task or a message saying no failed tasks
+            assert "task" in result or "message" in result, "Expected 'task' or 'message' key in response"
+            
+            # If there's a task, verify it has expected fields
+            if "task" in result:
+                task = result["task"]
+                assert isinstance(task, dict), "Task should be a dictionary"
+                assert "status" in task, "Task should have a status field"
+                assert task["status"] == "error", "Task status should be 'error'"
+                
+            # If there's a message, verify it
+            if "message" in result:
+                assert "No failed tasks found" in result["message"], "Message should indicate no failed tasks found"
+                
+        except Exception as e:
+            pytest.fail(f"Test failed: {str(e)}")
 
     @pytest.mark.asyncio
     @pytest.mark.skip(reason="Environment API integration currently unstable")
