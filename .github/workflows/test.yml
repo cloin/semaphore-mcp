@@ -25,27 +25,11 @@ jobs:
           pip install -r requirements.txt
           pip install -e .
           
-      - name: Install podman
-        run: |
-          . /etc/os-release
-          echo "Using Ubuntu version: $VERSION_ID"
-          
-          # Create keyrings directory if it doesn't exist
-          sudo mkdir -p /etc/apt/keyrings
-          
-          # Download the key to the keyrings directory
-          curl -fsSL "https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_${VERSION_ID}/Release.key" | sudo gpg --dearmor -o /etc/apt/keyrings/kubic-libcontainers.gpg
-          
-          # Add the repository with the signed-by option
-          echo "deb [signed-by=/etc/apt/keyrings/kubic-libcontainers.gpg] https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_${VERSION_ID}/ /" | sudo tee /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list > /dev/null
-          
-          # Update and install
-          sudo apt-get update
-          sudo apt-get -y install podman
+      # Docker is pre-installed on GitHub Actions runners, so no installation needed
           
       - name: Start SemaphoreUI container
         run: |
-          podman run -d \
+          docker run -d \
             --name semaphore-dev \
             -p 3000:3000 \
             -e SEMAPHORE_DB_DIALECT=bolt \
@@ -53,7 +37,7 @@ jobs:
             -e SEMAPHORE_ADMIN_NAME=admin \
             -e SEMAPHORE_ADMIN_EMAIL=admin@localhost \
             -e SEMAPHORE_ADMIN=admin \
-            -v semaphore-data:/etc/semaphore:Z \
+            -v semaphore-data:/etc/semaphore \
             semaphoreui/semaphore:latest
           
           # Give SemaphoreUI time to start up
@@ -81,5 +65,5 @@ jobs:
       - name: Cleanup
         if: always()
         run: |
-          podman stop semaphore-dev || true
-          podman rm semaphore-dev || true
+          docker stop semaphore-dev || true
+          docker rm semaphore-dev || true
