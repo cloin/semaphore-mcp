@@ -5,12 +5,17 @@ set -e
 SEMAPHORE_URL=${SEMAPHORE_URL:-http://localhost:3000}
 echo "Using Semaphore URL: $SEMAPHORE_URL"
 
+# Use environment variables for credentials or fallback to defaults
+# These should be set from GitHub secrets
+ADMIN_USER=${ADMIN_USERNAME:-admin}
+ADMIN_PASS=${ADMIN_PASSWORD:-admin123}
+
 # Step 1: Login to Semaphore and get cookie
-echo "Logging in to get cookie..."
+echo "Logging in with user: $ADMIN_USER"
 LOGIN_RESPONSE=$(curl -s -c /tmp/semaphore-cookie -X POST \
   -H 'Content-Type: application/json' \
   -H 'Accept: application/json' \
-  -d '{"auth": "admin", "password": "admin123"}' \
+  -d "{\"auth\": \"$ADMIN_USER\", \"password\": \"$ADMIN_PASS\"}" \
   $SEMAPHORE_URL/api/auth/login)
 
 echo "Login response: $LOGIN_RESPONSE"
@@ -48,7 +53,7 @@ if [ -z "$FULL_TOKEN" ] || [ "$FULL_TOKEN" = "null" ]; then
   echo "Trying alternative method..."
   FULL_TOKEN=$(curl -s -X POST \
     -H 'Content-Type: application/json' \
-    -d '{"auth": "admin", "password": "admin123"}' \
+    -d "{\"auth\": \"$ADMIN_USER\", \"password\": \"$ADMIN_PASS\"}" \
     $SEMAPHORE_URL/api/auth/login | jq -r '.token')
     
   if [ -n "$FULL_TOKEN" ] && [ "$FULL_TOKEN" != "null" ]; then
