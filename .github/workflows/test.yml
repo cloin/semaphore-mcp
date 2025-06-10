@@ -28,8 +28,18 @@ jobs:
       - name: Install podman
         run: |
           . /etc/os-release
-          sudo sh -c "echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_${VERSION_ID}/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list"
-          curl -L "https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_${VERSION_ID}/Release.key" | sudo apt-key add -
+          echo "Using Ubuntu version: $VERSION_ID"
+          
+          # Create keyrings directory if it doesn't exist
+          sudo mkdir -p /etc/apt/keyrings
+          
+          # Download the key to the keyrings directory
+          curl -fsSL "https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_${VERSION_ID}/Release.key" | sudo gpg --dearmor -o /etc/apt/keyrings/kubic-libcontainers.gpg
+          
+          # Add the repository with the signed-by option
+          echo "deb [signed-by=/etc/apt/keyrings/kubic-libcontainers.gpg] https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_${VERSION_ID}/ /" | sudo tee /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list > /dev/null
+          
+          # Update and install
           sudo apt-get update
           sudo apt-get -y install podman
           
