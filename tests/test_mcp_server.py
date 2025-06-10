@@ -27,38 +27,43 @@ class TestMCPServer:
 
     @pytest.mark.asyncio
     async def test_tools_list(self, server):
-        """Test the tools list."""
-        # We've now switched to FastMCP which handles message formatting internally
-        # Let's test if the tool methods exist on the server object
-        
-        # Verify the expected tools are available
-        expected_tools = [
-            'list_projects',
-            'get_project',
-            'list_templates',
-            'get_template',
-            'list_tasks',
-            'get_task',
-            'run_task',
-            'get_task_output',
-            'get_latest_failed_task'
+        """Test the tool classes on the server."""
+        # After refactoring, tools are organized into separate classes
+        # Verify the expected tool classes exist
+        expected_tool_classes = [
+            'project_tools',
+            'template_tools',
+            'task_tools',
+            'environment_tools'
         ]
         
-        # Check if each expected tool is a callable method on the server
-        for tool_name in expected_tools:
-            assert hasattr(server, tool_name), f"Tool {tool_name} not found"
-            assert callable(getattr(server, tool_name)), f"Tool {tool_name} is not callable"
+        # Check if each expected tool class exists on the server
+        for class_name in expected_tool_classes:
+            assert hasattr(server, class_name), f"Tool class {class_name} not found"
+        
+        # Check specific methods on each tool class
+        assert hasattr(server.project_tools, 'list_projects')
+        assert hasattr(server.project_tools, 'get_project')
+        
+        assert hasattr(server.template_tools, 'list_templates')
+        assert hasattr(server.template_tools, 'get_template')
+        
+        assert hasattr(server.task_tools, 'list_tasks')
+        assert hasattr(server.task_tools, 'get_task')
+        assert hasattr(server.task_tools, 'run_task')
+        assert hasattr(server.task_tools, 'get_task_output')
+        assert hasattr(server.task_tools, 'get_latest_failed_task')
         
         # Note: Environment and inventory tools are currently disabled in our FastMCP implementation
 
     @pytest.mark.asyncio
     async def test_call_list_projects(self, server):
         """Test calling the list_projects tool."""
-        # With FastMCP, we can test the tool function directly
+        # After refactoring, tools are in separate classes
         
         try:
-            # Call the list_projects function on the server
-            result = await server.list_projects()
+            # Call the list_projects function on the project_tools class
+            result = await server.project_tools.list_projects()
             
             # Verify we got a successful response
             assert isinstance(result, dict) or isinstance(result, list), "Expected result to be a dict or list"
@@ -76,17 +81,17 @@ class TestMCPServer:
     @pytest.mark.asyncio
     async def test_call_invalid_tool(self, server):
         """Test calling an invalid tool."""
-        # With FastMCP, calling non-existent tools should raise an AttributeError
+        # After refactoring, we'll test trying to access a non-existent tool on the project_tools class
         with pytest.raises((AttributeError, ValueError)):
             # Try to access a non-existent tool
-            await getattr(server, "invalid_tool")()
+            await getattr(server.project_tools, "invalid_tool")()
             
     @pytest.mark.asyncio
     async def test_list_tasks_default_limit(self, server):
         """Test list_tasks with default limit of 5."""
         try:
             # Get a project ID to work with
-            projects = await server.list_projects()
+            projects = await server.project_tools.list_projects()
             if not projects or (isinstance(projects, list) and not projects):
                 pytest.skip("No projects available for task tests")
                 
@@ -95,7 +100,7 @@ class TestMCPServer:
                 pytest.skip("Could not determine project ID")
                 
             # Call the list_tasks function with default limit
-            result = await server.list_tasks(project_id)
+            result = await server.task_tools.list_tasks(project_id)
             
             # Verify the response structure
             assert isinstance(result, dict), "Expected result to be a dict"
@@ -119,7 +124,7 @@ class TestMCPServer:
         """Test list_tasks with custom limit."""
         try:
             # Get a project ID to work with
-            projects = await server.list_projects()
+            projects = await server.project_tools.list_projects()
             if not projects or (isinstance(projects, list) and not projects):
                 pytest.skip("No projects available for task tests")
                 
@@ -129,7 +134,7 @@ class TestMCPServer:
                 
             # Call the list_tasks function with custom limit of 2
             custom_limit = 2
-            result = await server.list_tasks(project_id, limit=custom_limit)
+            result = await server.task_tools.list_tasks(project_id, limit=custom_limit)
             
             # Verify the response structure
             assert isinstance(result, dict), "Expected result to be a dict"
@@ -146,7 +151,7 @@ class TestMCPServer:
         """Test get_latest_failed_task."""
         try:
             # Get a project ID to work with
-            projects = await server.list_projects()
+            projects = await server.project_tools.list_projects()
             if not projects or (isinstance(projects, list) and not projects):
                 pytest.skip("No projects available for task tests")
                 
@@ -155,7 +160,7 @@ class TestMCPServer:
                 pytest.skip("Could not determine project ID")
                 
             # Call the get_latest_failed_task function
-            result = await server.get_latest_failed_task(project_id)
+            result = await server.task_tools.get_latest_failed_task(project_id)
             
             # Verify the response structure
             assert isinstance(result, dict), "Expected result to be a dict"
@@ -183,7 +188,7 @@ class TestMCPServer:
         """Test environment management tools."""
         # Get a project ID to work with using the new FastMCP approach
         try:
-            projects = await server.list_projects()
+            projects = await server.project_tools.list_projects()
             
             # Skip test if we couldn't get projects
             if not projects:
@@ -205,7 +210,7 @@ class TestMCPServer:
         """Test inventory management tools."""
         # Get a project ID to work with using the new FastMCP approach
         try:
-            projects = await server.list_projects()
+            projects = await server.project_tools.list_projects()
             
             # Skip test if we couldn't get projects
             if not projects:
@@ -224,7 +229,7 @@ class TestMCPServer:
         """Test running a task called 'test setup'."""
         try:
             # Step 1: First get all projects
-            projects = await server.list_projects()
+            projects = await server.project_tools.list_projects()
             if not projects:
                 pytest.skip("No projects available for task tests")
                 
@@ -239,7 +244,7 @@ class TestMCPServer:
                 project_id = projects["projects"][0]["id"]
                 
             # Step 2: Get templates for this project
-            templates = await server.list_templates(project_id)
+            templates = await server.template_tools.list_templates(project_id)
             
             # Handle different response formats
             template_list = []
@@ -270,7 +275,7 @@ class TestMCPServer:
             
             # Scenario 1: Run task with explicit project_id
             print(f"Running template {template_id} with explicit project_id {project_id}")
-            result1 = await server.run_task(template_id, project_id=project_id)
+            result1 = await server.task_tools.run_task(template_id, project_id=project_id)
             
             # Verify response structure
             assert isinstance(result1, dict), "Expected result to be a dict"
@@ -279,7 +284,7 @@ class TestMCPServer:
             
             # Scenario 2: Run task with automatic project_id determination
             print(f"Running template {template_id} with automatic project_id determination")
-            result2 = await server.run_task(template_id)
+            result2 = await server.task_tools.run_task(template_id)
             
             # Verify response structure
             assert isinstance(result2, dict), "Expected result to be a dict"
