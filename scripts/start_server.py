@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """
-Script to start the SemaphoreMCP server.
+Script to start the SemaphoreMCP server using FastMCP.
 """
 
-import asyncio
 import argparse
 import os
 import sys
@@ -11,7 +10,7 @@ import sys
 # Add the src directory to the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from src.semaphore_mcp.server import start_stdio_server
+from src.semaphore_mcp.server import start_server
 
 
 def parse_args():
@@ -45,7 +44,7 @@ def main():
         import logging
         logging.getLogger("semaphore_mcp").setLevel(logging.DEBUG)
     
-    asyncio.run(start_stdio_server(args.url, args.token))
+    start_server(args.url, args.token)
 
 
 if __name__ == "__main__":
