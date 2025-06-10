@@ -15,6 +15,10 @@ from mcp.server.fastmcp import FastMCP
 
 from .api import SemaphoreAPIClient, create_client
 from .config import configure_logging, get_config
+from .tools.projects import ProjectTools
+from .tools.templates import TemplateTools
+from .tools.tasks import TaskTools
+from .tools.environments import EnvironmentTools
 
 # Configure logging
 configure_logging()
@@ -44,281 +48,50 @@ class SemaphoreMCPServer:
         # Initialize FastMCP
         self.mcp = FastMCP("semaphore")
         
+        # Initialize tool classes
+        self.project_tools = ProjectTools(self.semaphore)
+        self.template_tools = TemplateTools(self.semaphore)
+        self.task_tools = TaskTools(self.semaphore)
+        self.environment_tools = EnvironmentTools(self.semaphore)
+        
         # Register tools
         self.register_tools()
     
     def register_tools(self):
         """Register MCP tools for SemaphoreUI."""
-        self.mcp.tool()(self.list_projects)
-        self.mcp.tool()(self.get_project)
-        self.mcp.tool()(self.list_templates)
-        self.mcp.tool()(self.get_template)
-        self.mcp.tool()(self.list_tasks)
-        self.mcp.tool()(self.get_task)
-        self.mcp.tool()(self.run_task)
-        self.mcp.tool()(self.get_task_output)
-        self.mcp.tool()(self.get_latest_failed_task)
+        # Project tools
+        self.mcp.tool()(self.project_tools.list_projects)
+        self.mcp.tool()(self.project_tools.get_project)
         
-        # Skip environment and inventory operations as they're unstable
-        # These can be re-enabled when the API compatibility issues are resolved
-        # self.mcp.tool()(self.list_environments)
-        # self.mcp.tool()(self.get_environment)
-        # self.mcp.tool()(self.create_environment)
-        # self.mcp.tool()(self.update_environment)
-        # self.mcp.tool()(self.delete_environment)
+        # Template tools
+        self.mcp.tool()(self.template_tools.list_templates)
+        self.mcp.tool()(self.template_tools.get_template)
         
-        # self.mcp.tool()(self.list_inventory)
-        # self.mcp.tool()(self.get_inventory)
-        # self.mcp.tool()(self.create_inventory)
-        # self.mcp.tool()(self.update_inventory)
-        # self.mcp.tool()(self.delete_inventory)
+        # Task tools
+        self.mcp.tool()(self.task_tools.list_tasks)
+        self.mcp.tool()(self.task_tools.get_task)
+        self.mcp.tool()(self.task_tools.run_task)
+        self.mcp.tool()(self.task_tools.get_task_output)
+        self.mcp.tool()(self.task_tools.get_latest_failed_task)
+        
+        # Environment and inventory operations are disabled due to API compatibility issues
+        # These can be re-enabled when the compatibility issues are resolved
+        
+        # Environment tools
+        # self.mcp.tool()(self.environment_tools.list_environments)
+        # self.mcp.tool()(self.environment_tools.get_environment)
+        # self.mcp.tool()(self.environment_tools.create_environment)
+        # self.mcp.tool()(self.environment_tools.update_environment)
+        # self.mcp.tool()(self.environment_tools.delete_environment)
+        
+        # Inventory tools
+        # self.mcp.tool()(self.environment_tools.list_inventory)
+        # self.mcp.tool()(self.environment_tools.get_inventory)
+        # self.mcp.tool()(self.environment_tools.create_inventory)
+        # self.mcp.tool()(self.environment_tools.update_inventory)
+        # self.mcp.tool()(self.environment_tools.delete_inventory)
     
-    async def list_projects(self) -> Dict[str, Any]:
-        """List all projects in SemaphoreUI.
-
-        Returns:
-            A list of projects with their details.
-        """
-        try:
-            return self.semaphore.list_projects()
-        except Exception as e:
-            logger.error(f"Error listing projects: {str(e)}")
-            raise RuntimeError(f"Error listing projects: {str(e)}")
-    
-    async def get_project(self, project_id: int) -> Dict[str, Any]:
-        """Get details of a specific project.
-
-        Args:
-            project_id: ID of the project to fetch
-
-        Returns:
-            Project details
-        """
-        try:
-            return self.semaphore.get_project(project_id)
-        except Exception as e:
-            logger.error(f"Error getting project {project_id}: {str(e)}")
-            raise RuntimeError(f"Error getting project: {str(e)}")
-    
-    async def list_templates(self, project_id: int) -> Dict[str, Any]:
-        """List all templates for a project.
-
-        Args:
-            project_id: ID of the project
-
-        Returns:
-            A list of templates for the project
-        """
-        try:
-            return self.semaphore.list_templates(project_id)
-        except Exception as e:
-            logger.error(f"Error listing templates for project {project_id}: {str(e)}")
-            raise RuntimeError(f"Error listing templates: {str(e)}")
-    
-    async def get_template(self, project_id: int, template_id: int) -> Dict[str, Any]:
-        """Get details of a specific template.
-
-        Args:
-            project_id: ID of the project
-            template_id: ID of the template to fetch
-
-        Returns:
-            Template details
-        """
-        try:
-            return self.semaphore.get_template(project_id, template_id)
-        except Exception as e:
-            logger.error(f"Error getting template {template_id}: {str(e)}")
-            raise RuntimeError(f"Error getting template: {str(e)}")
-    
-    async def list_tasks(self, project_id: int, limit: int = 5) -> Dict[str, Any]:
-        """List tasks for a project with a default limit of 5 to avoid overloading context windows.
-
-        Args:
-            project_id: ID of the project
-            limit: Maximum number of tasks to return (default: 5)
-
-        Returns:
-            A list of tasks for the project, limited by the specified count
-        """
-        try:
-            # Warn if a large number of tasks is requested
-            if limit > 5:
-                logger.warning(f"Requesting {limit} tasks may overload the context window")
-            
-            # Get all tasks from the API
-            api_response = self.semaphore.list_tasks(project_id)
-            
-            # Handle different response formats (list or dict with 'tasks' key)
-            all_tasks = []
-            if isinstance(api_response, list):
-                all_tasks = api_response
-            elif isinstance(api_response, dict) and "tasks" in api_response:
-                all_tasks = api_response.get("tasks", [])
-            
-            # Sort tasks by creation time (newest first)
-            sorted_tasks = sorted(
-                all_tasks, 
-                key=lambda x: x.get("created", "") if isinstance(x, dict) else "", 
-                reverse=True
-            )
-            
-            # Return only the limited number of tasks
-            limited_tasks = sorted_tasks[:limit]
-            
-            return {
-                "tasks": limited_tasks,
-                "total": len(all_tasks),
-                "shown": len(limited_tasks),
-                "note": f"Showing {len(limited_tasks)} of {len(all_tasks)} tasks (sorted by newest first)"
-            }
-        except Exception as e:
-            logger.error(f"Error listing tasks for project {project_id}: {str(e)}")
-            raise RuntimeError(f"Error listing tasks: {str(e)}")
-            
-    async def get_latest_failed_task(self, project_id: int) -> Dict[str, Any]:
-        """Get the most recent failed task for a project.
-
-        Args:
-            project_id: ID of the project
-
-        Returns:
-            The most recent failed task or a message if no failed tasks are found
-        """
-        try:
-            # Get all tasks from the API
-            api_response = self.semaphore.list_tasks(project_id)
-            
-            # Handle different response formats (list or dict with 'tasks' key)
-            tasks = []
-            if isinstance(api_response, list):
-                tasks = api_response
-            elif isinstance(api_response, dict) and "tasks" in api_response:
-                tasks = api_response.get("tasks", [])
-            
-            # Filter for failed tasks and sort by creation time (newest first)
-            failed_tasks = [t for t in tasks if isinstance(t, dict) and t.get("status") == "error"]
-            sorted_failed = sorted(
-                failed_tasks, 
-                key=lambda x: x.get("created", ""), 
-                reverse=True
-            )
-            
-            if not sorted_failed:
-                return {"message": "No failed tasks found for this project"}
-                
-            # Return the most recent failed task
-            return {"task": sorted_failed[0]}
-        except Exception as e:
-            logger.error(f"Error getting latest failed task for project {project_id}: {str(e)}")
-            raise RuntimeError(f"Error getting latest failed task: {str(e)}")
-    
-    async def get_task(self, project_id: int, task_id: int) -> Dict[str, Any]:
-        """Get details of a specific task.
-
-        Args:
-            project_id: ID of the project
-            task_id: ID of the task to fetch
-
-        Returns:
-            Task details
-        """
-        try:
-            return self.semaphore.get_task(project_id, task_id)
-        except Exception as e:
-            logger.error(f"Error getting task {task_id}: {str(e)}")
-            raise RuntimeError(f"Error getting task: {str(e)}")
-    
-    async def run_task(self, template_id: int, project_id: Optional[int] = None, 
-                       environment: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
-        """Run a task from a template.
-
-        Args:
-            template_id: ID of the template to run
-            project_id: Optional project ID (if not provided, will attempt to determine from template)
-            environment: Optional environment variables for the task as dictionary
-
-        Returns:
-            Task run result
-        """
-        try:
-            # If project_id is not provided, we need to find it
-            if not project_id:
-                # First get all projects
-                projects = self.semaphore.list_projects()
-                
-                # Handle different response formats
-                project_list = []
-                if isinstance(projects, list):
-                    project_list = projects
-                elif isinstance(projects, dict) and "projects" in projects:
-                    project_list = projects["projects"]
-                    
-                # If we have projects, try to look at templates for each project
-                found = False
-                if project_list:
-                    for proj in project_list:
-                        try:
-                            proj_id = proj["id"]
-                            templates = self.semaphore.list_templates(proj_id)
-                            
-                            # Handle different response formats for templates
-                            template_list = []
-                            if isinstance(templates, list):
-                                template_list = templates
-                            elif isinstance(templates, dict) and "templates" in templates:
-                                template_list = templates["templates"]
-                            
-                            # Check if our template ID is in this project's templates
-                            for tmpl in template_list:
-                                if tmpl["id"] == template_id:
-                                    project_id = proj_id
-                                    found = True
-                                    break
-                                    
-                            if found:
-                                break
-                                
-                        except Exception as template_err:
-                            logger.warning(f"Error checking templates in project {proj['id']}: {str(template_err)}")
-                            continue
-                
-                if not project_id:
-                    raise RuntimeError(f"Could not determine project_id for template {template_id}. Please provide it explicitly.")
-            
-            # Now run the task with the determined project_id
-            try:
-                return self.semaphore.run_task(project_id, template_id, environment=environment)
-            except requests.exceptions.HTTPError as http_err:
-                status_code = http_err.response.status_code if hasattr(http_err, 'response') and hasattr(http_err.response, 'status_code') else 'unknown'
-                error_msg = f"HTTP error {status_code} when running task: {str(http_err)}"
-                if status_code == 400 and environment:
-                    error_msg += ". The 400 Bad Request might be related to unsupported environment variables"
-                logger.error(error_msg)
-                raise RuntimeError(error_msg)
-            except Exception as e:
-                logger.error(f"Error running task for template {template_id} in project {project_id}: {str(e)}")
-                raise RuntimeError(f"Error running task: {str(e)}")
-        except Exception as e:
-            logger.error(f"Error in project/template lookup for template {template_id}: {str(e)}")
-            raise RuntimeError(f"Error preparing to run task: {str(e)}")
-    
-    async def get_task_output(self, task_id: int) -> str:
-        """Get output from a completed task.
-
-        Args:
-            task_id: ID of the task
-
-        Returns:
-            Task output
-        """
-        try:
-            output = self.semaphore.get_task_output(task_id)
-            # Format output nicely
-            return json.dumps(output, indent=2)
-        except Exception as e:
-            logger.error(f"Error getting output for task {task_id}: {str(e)}")
-            raise RuntimeError(f"Error getting task output: {str(e)}")
+    # Tool methods have been moved to dedicated tool classes
     
     def run(self):
         """Run the MCP server."""
