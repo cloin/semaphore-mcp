@@ -45,33 +45,56 @@ jobs:
           sleep 15
           
       - name: Generate API token
-        id: generate-token
+        id: generate-semaphore-token
         run: |
-          # Create a token using the username/password
-          TOKEN=$(curl -s -X POST \
-            -H "Content-Type: application/json" \
-            -d '{"auth":"admin","password":"admin123"}' \
-            http://localhost:3000/api/auth/login | jq -r '.token')
+          set -e
           
-          # Verify token is not empty
-          if [ -z "$TOKEN" ]; then
-            echo "Error: Token generation failed or token is empty"
-            exit 1
+          # Step 1: Login to Semaphore and get cookie
+          echo "Logging in to get cookie..."
+          curl -s -c /tmp/semaphore-cookie -X POST \
+            -H 'Content-Type: application/json' \
+            -H 'Accept: application/json' \
+            -d '{"auth": "admin", "password": "admin123"}' \
+            http://localhost:3000/api/auth/login
+          
+          # Step 2: Generate a new token
+          echo "Generating new token..."
+          curl -s -b /tmp/semaphore-cookie -X POST \
+            -H 'Content-Type: application/json' \
+            -H 'Accept: application/json' \
+            http://localhost:3000/api/user/tokens
+          
+          # Step 3: Get the token value
+          echo "Getting token list..."
+          TOKEN_JSON=$(curl -s -b /tmp/semaphore-cookie \
+            -H 'Content-Type: application/json' \
+            -H 'Accept: application/json' \
+            http://localhost:3000/api/user/tokens)
+          
+          # Extract token
+          TOKEN=$(echo "$TOKEN_JSON" | jq -r '.[0].id')
+          
+          # Fallback if needed
+          if [ -z "$TOKEN" ] || [ "$TOKEN" = "null" ]; then
+            echo "Trying alternative method..."
+            TOKEN=$(curl -s -X POST \
+              -H 'Content-Type: application/json' \
+              -d '{"auth": "admin", "password": "admin123"}' \
+              http://localhost:3000/api/auth/login | jq -r '.token')
           fi
           
+          # Output token for GitHub Actions
           echo "SEMAPHORE_API_TOKEN=$TOKEN" >> $GITHUB_ENV
           echo "token=$TOKEN" >> $GITHUB_OUTPUT
-          echo "Token generated successfully: ${TOKEN:0:10}..."
-      
+               
       - name: Run tests
         run: |
-          # Debug: Check if token is available
-          if [ -z "$SEMAPHORE_API_TOKEN" ]; then
-            echo "Warning: SEMAPHORE_API_TOKEN is not set in environment"
-            # Use the output from previous step as fallback
-            export SEMAPHORE_API_TOKEN="${{ steps.generate-token.outputs.token }}"
-            echo "Using token from previous step output"
-          fi
+          # Make sure to use the token from the previous step
+          export SEMAPHORE_API_TOKEN="${{ steps.generate-semaphore-token.outputs.token }}"
+          
+          # Debug token info
+          echo "Token length: ${#SEMAPHORE_API_TOKEN}"
+          echo "Token starts with: ${SEMAPHORE_API_TOKEN:0:8}..."
           
           # Verify we have a token before running tests
           if [ -z "$SEMAPHORE_API_TOKEN" ]; then
@@ -81,10 +104,16 @@ jobs:
             echo "API token is available - running tests"
           fi
           
+          # Create a .env file with the token for pytest
+          echo "SEMAPHORE_URL=http://localhost:3000" > .env
+          echo "SEMAPHORE_API_TOKEN=$SEMAPHORE_API_TOKEN" >> .env
+          
+          # Run tests with explicit env variables
           pytest tests/ -v
         env:
           SEMAPHORE_URL: http://localhost:3000
-          SEMAPHORE_API_TOKEN: ${{ steps.generate-token.outputs.token }}
+          # Use the token from previous step
+          SEMAPHORE_API_TOKEN: ${{ steps.generate-semaphore-token.outputs.token }}
           
       - name: Cleanup
         if: always()
