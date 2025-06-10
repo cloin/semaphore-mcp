@@ -1,0 +1,75 @@
+name: Test SemaphoreMCP
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e .
+          
+      - name: Install podman
+        run: |
+          . /etc/os-release
+          sudo sh -c "echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_${VERSION_ID}/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list"
+          curl -L "https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_${VERSION_ID}/Release.key" | sudo apt-key add -
+          sudo apt-get update
+          sudo apt-get -y install podman
+          
+      - name: Start SemaphoreUI container
+        run: |
+          podman run -d \
+            --name semaphore-dev \
+            -p 3000:3000 \
+            -e SEMAPHORE_DB_DIALECT=bolt \
+            -e SEMAPHORE_ADMIN_PASSWORD=admin123 \
+            -e SEMAPHORE_ADMIN_NAME=admin \
+            -e SEMAPHORE_ADMIN_EMAIL=admin@localhost \
+            -e SEMAPHORE_ADMIN=admin \
+            -v semaphore-data:/etc/semaphore:Z \
+            semaphoreui/semaphore:latest
+          
+          # Give SemaphoreUI time to start up
+          echo "Waiting for SemaphoreUI to start..."
+          sleep 15
+          
+      - name: Generate API token
+        id: generate-token
+        run: |
+          # Create a token using the username/password
+          TOKEN=$(curl -s -X POST \
+            -H "Content-Type: application/json" \
+            -d '{"auth":"admin","password":"admin123"}' \
+            http://localhost:3000/api/auth/login | jq -r '.token')
+          
+          echo "SEMAPHORE_API_TOKEN=$TOKEN" >> $GITHUB_ENV
+          echo "Token generated successfully"
+      
+      - name: Run tests
+        run: |
+          pytest tests/ -v
+        env:
+          SEMAPHORE_URL: http://localhost:3000
+          
+      - name: Cleanup
+        if: always()
+        run: |
+          podman stop semaphore-dev || true
+          podman rm semaphore-dev || true
