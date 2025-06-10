@@ -53,14 +53,38 @@ jobs:
             -d '{"auth":"admin","password":"admin123"}' \
             http://localhost:3000/api/auth/login | jq -r '.token')
           
+          # Verify token is not empty
+          if [ -z "$TOKEN" ]; then
+            echo "Error: Token generation failed or token is empty"
+            exit 1
+          fi
+          
           echo "SEMAPHORE_API_TOKEN=$TOKEN" >> $GITHUB_ENV
-          echo "Token generated successfully"
+          echo "token=$TOKEN" >> $GITHUB_OUTPUT
+          echo "Token generated successfully: ${TOKEN:0:10}..."
       
       - name: Run tests
         run: |
+          # Debug: Check if token is available
+          if [ -z "$SEMAPHORE_API_TOKEN" ]; then
+            echo "Warning: SEMAPHORE_API_TOKEN is not set in environment"
+            # Use the output from previous step as fallback
+            export SEMAPHORE_API_TOKEN="${{ steps.generate-token.outputs.token }}"
+            echo "Using token from previous step output"
+          fi
+          
+          # Verify we have a token before running tests
+          if [ -z "$SEMAPHORE_API_TOKEN" ]; then
+            echo "Error: No API token available - tests will fail"
+            exit 1
+          else
+            echo "API token is available - running tests"
+          fi
+          
           pytest tests/ -v
         env:
           SEMAPHORE_URL: http://localhost:3000
+          SEMAPHORE_API_TOKEN: ${{ steps.generate-token.outputs.token }}
           
       - name: Cleanup
         if: always()
