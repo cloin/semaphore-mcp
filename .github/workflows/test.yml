@@ -51,8 +51,8 @@ jobs:
           # Make the script executable
           chmod +x .github/workflows/generate-token.sh
           
-          # Run the script to generate the token
-          .github/workflows/generate-token.sh
+          # Run the script to generate the token with secrets as arguments
+          .github/workflows/generate-token.sh "$ADMIN_USERNAME" "$ADMIN_PASSWORD"
         env:
           ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
           ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
