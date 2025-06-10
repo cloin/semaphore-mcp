@@ -17,7 +17,6 @@ The server uses FastMCP for efficient protocol handling and simple tool registra
 - [x] Secure token handling for tests and CI
 - [x] Environment variables configuration
 - [x] Improved error handling in server response formatting
-- [x] Migration from custom MCP implementation to FastMCP
 
 ### Working Features
 - ✅ Project operations (list, get, create, update, delete)
@@ -65,7 +64,7 @@ After starting SemaphoreUI:
 1. Access the web UI at http://localhost:3000
 2. Login with username `admin` and password `admin123`
 3. Navigate to User Settings and create an API token
-4. Set up the API token in your `.env` file or generate one using the provided script:
+4. Set up the API token in your `.env` file or generate one using the provided script (semaphore url hardcoded as http://localhost:3000):
    ```bash
    # Generate a token with default admin credentials
    ./scripts/generate-token.sh admin admin123
@@ -98,7 +97,7 @@ Some tests for environment and inventory management are currently skipped due to
 
 ### Installation
 
-#### Option 1: Using uv (Recommended by MCP)
+#### Using uv
 
 ```bash
 # Clone the repository
@@ -114,21 +113,6 @@ source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
 # Install the package in development mode
 uv pip install -e .
-```
-
-#### Option 2: Using pip
-
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/semaphore-mcp.git
-cd semaphore-mcp
-
-# Create and activate a virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install the package in development mode
-pip install -e .
 ```
 
 ### Configuration
