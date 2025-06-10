@@ -8,6 +8,7 @@ SemaphoreUI API functionality through MCP tools.
 import json
 import logging
 import os
+import requests
 from typing import Any, Dict, List, Optional
 
 from mcp.server.fastmcp import FastMCP
@@ -228,37 +229,79 @@ class SemaphoreMCPServer:
             logger.error(f"Error getting task {task_id}: {str(e)}")
             raise RuntimeError(f"Error getting task: {str(e)}")
     
-    async def run_task(self, template_id: int, environment_id: Optional[int] = None, 
-                       inventory_id: Optional[int] = None, playbook: Optional[str] = None,
-                       debug: bool = False, dry_run: bool = False, 
-                       task_type: str = "template") -> Dict[str, Any]:
+    async def run_task(self, template_id: int, project_id: Optional[int] = None, 
+                       environment: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
         """Run a task from a template.
 
         Args:
             template_id: ID of the template to run
-            environment_id: Optional ID of the environment to use
-            inventory_id: Optional ID of the inventory to use
-            playbook: Optional playbook to use
-            debug: Whether to run in debug mode
-            dry_run: Whether to run in dry run mode
-            task_type: Type of task to run (default: 'template')
+            project_id: Optional project ID (if not provided, will attempt to determine from template)
+            environment: Optional environment variables for the task as dictionary
 
         Returns:
             Task run result
         """
         try:
-            return self.semaphore.run_task(
-                template_id, 
-                environment_id=environment_id,
-                inventory_id=inventory_id,
-                playbook=playbook,
-                debug=debug,
-                dry_run=dry_run,
-                task_type=task_type
-            )
+            # If project_id is not provided, we need to find it
+            if not project_id:
+                # First get all projects
+                projects = self.semaphore.list_projects()
+                
+                # Handle different response formats
+                project_list = []
+                if isinstance(projects, list):
+                    project_list = projects
+                elif isinstance(projects, dict) and "projects" in projects:
+                    project_list = projects["projects"]
+                    
+                # If we have projects, try to look at templates for each project
+                found = False
+                if project_list:
+                    for proj in project_list:
+                        try:
+                            proj_id = proj["id"]
+                            templates = self.semaphore.list_templates(proj_id)
+                            
+                            # Handle different response formats for templates
+                            template_list = []
+                            if isinstance(templates, list):
+                                template_list = templates
+                            elif isinstance(templates, dict) and "templates" in templates:
+                                template_list = templates["templates"]
+                            
+                            # Check if our template ID is in this project's templates
+                            for tmpl in template_list:
+                                if tmpl["id"] == template_id:
+                                    project_id = proj_id
+                                    found = True
+                                    break
+                                    
+                            if found:
+                                break
+                                
+                        except Exception as template_err:
+                            logger.warning(f"Error checking templates in project {proj['id']}: {str(template_err)}")
+                            continue
+                
+                if not project_id:
+                    raise RuntimeError(f"Could not determine project_id for template {template_id}. Please provide it explicitly.")
+            
+            # Now run the task with the determined project_id
+            try:
+                return self.semaphore.run_task(project_id, template_id, environment=environment)
+            except requests.exceptions.HTTPError as http_err:
+                status_code = http_err.response.status_code if hasattr(http_err, 'response') and hasattr(http_err.response, 'status_code') else 'unknown'
+                error_msg = f"HTTP error {status_code} when running task: {str(http_err)}"
+                if status_code == 400 and environment:
+                    error_msg += ". The 400 Bad Request might be related to unsupported environment variables"
+                logger.error(error_msg)
+                raise RuntimeError(error_msg)
+            except Exception as e:
+                logger.error(f"Error running task for template {template_id} in project {project_id}: {str(e)}")
+                raise RuntimeError(f"Error running task: {str(e)}")
         except Exception as e:
-            logger.error(f"Error running task for template {template_id}: {str(e)}")
-            raise RuntimeError(f"Error running task: {str(e)}")
+            logger.error(f"Error in project/template lookup for template {template_id}: {str(e)}")
+            raise RuntimeError(f"Error preparing to run task: {str(e)}")
     
     async def get_task_output(self, task_id: int) -> str:
         """Get output from a completed task.
