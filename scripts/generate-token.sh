@@ -1,4 +1,7 @@
 #!/bin/bash
+
+# https://docs.semaphoreui.com/administration-guide/api/#using-http-request
+
 set -e
 
 # Check for required arguments
