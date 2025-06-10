@@ -27,7 +27,32 @@ jobs:
           pip install -e .
           
       # Docker is pre-installed on GitHub Actions runners, so no installation needed
+      
+      - name: Cache Docker images
+        id: cache-docker
+        uses: actions/cache@v4
+        with:
+          path: /tmp/docker-registry
+          key: docker-${{ runner.os }}-semaphoreui-${{ hashFiles('**/test.yml') }}
+          restore-keys: |
+            docker-${{ runner.os }}-semaphoreui-
+            docker-${{ runner.os }}-
           
+      - name: Set up Docker cache
+        if: steps.cache-docker.outputs.cache-hit != 'true'
+        run: |
+          # Pull the image and save it to the cache directory
+          mkdir -p /tmp/docker-registry
+          docker pull semaphoreui/semaphore:latest
+          docker save semaphoreui/semaphore:latest > /tmp/docker-registry/semaphoreui-image.tar
+        
+      - name: Load cached Docker image
+        if: steps.cache-docker.outputs.cache-hit == 'true'
+        run: |
+          echo "Loading Docker image from cache..."
+          docker load < /tmp/docker-registry/semaphoreui-image.tar
+          docker images
+      
       - name: Start SemaphoreUI container
         run: |
           docker run -d \
