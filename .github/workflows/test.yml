@@ -49,10 +49,10 @@ jobs:
         id: generate-semaphore-token
         run: |
           # Make the script executable
-          chmod +x .github/workflows/generate-token.sh
+          chmod +x scripts/generate-token.sh
           
           # Run the script to generate the token with secrets as arguments
-          .github/workflows/generate-token.sh "$ADMIN_USERNAME" "$ADMIN_PASSWORD"
+          scripts/generate-token.sh "$ADMIN_USERNAME" "$ADMIN_PASSWORD"
         env:
           ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
           ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
