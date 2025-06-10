@@ -34,8 +34,8 @@ jobs:
             --name semaphore-dev \
             -p 3000:3000 \
             -e SEMAPHORE_DB_DIALECT=bolt \
-            -e SEMAPHORE_ADMIN_PASSWORD=admin123 \
-            -e SEMAPHORE_ADMIN_NAME=admin \
+            -e SEMAPHORE_ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }} \
+            -e SEMAPHORE_ADMIN_NAME=${{ secrets.ADMIN_USERNAME }} \
             -e SEMAPHORE_ADMIN_EMAIL=admin@localhost \
             -e SEMAPHORE_ADMIN=admin \
             -v semaphore-data:/etc/semaphore \
