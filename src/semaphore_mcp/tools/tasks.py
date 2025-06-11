@@ -3,6 +3,7 @@ Task-related tools for Semaphore MCP.
 
 This module provides tools for interacting with Semaphore tasks.
 """
+import asyncio
 import json
 import logging
 import requests
@@ -15,12 +16,23 @@ logger = logging.getLogger(__name__)
 class TaskTools(BaseTool):
     """Tools for working with Semaphore tasks."""
     
-    async def list_tasks(self, project_id: int, limit: int = 5) -> Dict[str, Any]:
+    # Status mapping for user-friendly names
+    STATUS_MAPPING = {
+        'successful': 'success',
+        'failed': 'error', 
+        'running': 'running',
+        'waiting': 'waiting',
+        'stopped': 'stopped'  # May need to verify this mapping
+    }
+    
+    async def list_tasks(self, project_id: int, limit: int = 5, status: Optional[str] = None, tags: Optional[List[str]] = None) -> Dict[str, Any]:
         """List tasks for a project with a default limit of 5 to avoid overloading context windows.
 
         Args:
             project_id: ID of the project
             limit: Maximum number of tasks to return (default: 5)
+            status: Optional status filter (e.g., 'success', 'error', 'running')
+            tags: Optional list of tags to filter by
 
         Returns:
             A list of tasks for the project, limited by the specified count
@@ -40,9 +52,16 @@ class TaskTools(BaseTool):
             elif isinstance(api_response, dict) and "tasks" in api_response:
                 all_tasks = api_response.get("tasks", [])
             
+            # Filter tasks by status and tags if provided
+            filtered_tasks = all_tasks
+            if status:
+                filtered_tasks = [t for t in filtered_tasks if t.get("status") == self.STATUS_MAPPING.get(status)]
+            if tags:
+                filtered_tasks = [t for t in filtered_tasks if all(tag in t.get("tags", []) for tag in tags)]
+            
             # Sort tasks by creation time (newest first)
             sorted_tasks = sorted(
-                all_tasks, 
+                filtered_tasks, 
                 key=lambda x: x.get("created", "") if isinstance(x, dict) else "", 
                 reverse=True
             )
@@ -184,18 +203,408 @@ class TaskTools(BaseTool):
             logger.error(f"Error in project/template lookup for template {template_id}: {str(e)}")
             raise RuntimeError(f"Error preparing to run task: {str(e)}")
     
-    async def get_task_output(self, task_id: int) -> str:
+    async def get_task_output(self, project_id: int, task_id: int) -> str:
         """Get output from a completed task.
 
         Args:
+            project_id: ID of the project
             task_id: ID of the task
 
         Returns:
             Task output
         """
         try:
-            output = self.semaphore.get_task_output(task_id)
+            output = self.semaphore.get_task_output(project_id, task_id)
             # Format output nicely
             return json.dumps(output, indent=2)
         except Exception as e:
             self.handle_error(e, f"getting output for task {task_id}")
+    
+    async def stop_task(self, project_id: int, task_id: int) -> Dict[str, Any]:
+        """Stop a running task.
+
+        Args:
+            project_id: ID of the project
+            task_id: ID of the task to stop
+
+        Returns:
+            Task stop result
+        """
+        try:
+            return self.semaphore.stop_task(project_id, task_id)
+        except Exception as e:
+            self.handle_error(e, f"stopping task {task_id}")
+    
+    async def filter_tasks(self, project_id: int, 
+                          status: Optional[List[str]] = None,
+                          limit: int = 50,
+                          use_last_tasks: bool = True) -> Dict[str, Any]:
+        """Filter tasks by multiple criteria with bulk operation support.
+
+        Args:
+            project_id: ID of the project
+            status: List of statuses to filter by (e.g., ['success', 'error'])
+            limit: Maximum number of tasks to return
+            use_last_tasks: Use efficient last 200 tasks endpoint
+
+        Returns:
+            Filtered tasks with statistics
+        """
+        try:
+            # Get tasks using efficient endpoint if available
+            if use_last_tasks:
+                try:
+                    api_response = self.semaphore.get_last_tasks(project_id)
+                except Exception:
+                    # Fallback to regular list if last_tasks fails
+                    api_response = self.semaphore.list_tasks(project_id)
+            else:
+                api_response = self.semaphore.list_tasks(project_id)
+            
+            # Handle different response formats
+            all_tasks = []
+            if isinstance(api_response, list):
+                all_tasks = api_response
+            elif isinstance(api_response, dict) and "tasks" in api_response:
+                all_tasks = api_response.get("tasks", [])
+            
+            # Apply status filters
+            filtered_tasks = all_tasks
+            if status:
+                # Convert user-friendly status names to API status values
+                api_statuses = [self.STATUS_MAPPING.get(s, s) for s in status]
+                filtered_tasks = [t for t in filtered_tasks if t.get("status") in api_statuses]
+            
+            # Sort by creation time (newest first)
+            sorted_tasks = sorted(
+                filtered_tasks,
+                key=lambda x: x.get("created", "") if isinstance(x, dict) else "",
+                reverse=True
+            )
+            
+            # Apply limit
+            limited_tasks = sorted_tasks[:limit]
+            
+            # Generate statistics
+            stats = {
+                "total_tasks": len(all_tasks),
+                "filtered_tasks": len(filtered_tasks),
+                "returned_tasks": len(limited_tasks)
+            }
+            
+            # Status breakdown
+            if filtered_tasks:
+                status_counts = {}
+                for task in filtered_tasks:
+                    task_status = task.get("status", "unknown")
+                    status_counts[task_status] = status_counts.get(task_status, 0) + 1
+                stats["status_breakdown"] = status_counts
+            
+            return {
+                "tasks": limited_tasks,
+                "statistics": stats,
+                "note": f"Showing {len(limited_tasks)} of {len(filtered_tasks)} filtered tasks"
+            }
+        except Exception as e:
+            self.handle_error(e, f"filtering tasks for project {project_id}")
+    
+    async def bulk_stop_tasks(self, project_id: int, task_ids: List[int], 
+                             confirm: bool = False) -> Dict[str, Any]:
+        """Stop multiple tasks with confirmation.
+
+        Args:
+            project_id: ID of the project
+            task_ids: List of task IDs to stop
+            confirm: Set to True to execute the bulk stop operation
+
+        Returns:
+            Confirmation details or bulk stop results
+        """
+        try:
+            if not confirm:
+                # Get details about tasks to be stopped
+                task_details = []
+                for task_id in task_ids:
+                    try:
+                        task = self.semaphore.get_task(project_id, task_id)
+                        task_details.append({
+                            "id": task_id,
+                            "status": task.get("status"),
+                            "template": task.get("template", {}).get("name", "Unknown")
+                        })
+                    except Exception:
+                        task_details.append({
+                            "id": task_id,
+                            "status": "unknown",
+                            "template": "Unknown"
+                        })
+                
+                # Generate confirmation message
+                status_counts = {}
+                for task in task_details:
+                    status = task["status"]
+                    status_counts[status] = status_counts.get(status, 0) + 1
+                
+                return {
+                    "confirmation_required": True,
+                    "tasks_to_stop": len(task_ids),
+                    "task_details": task_details,
+                    "status_breakdown": status_counts,
+                    "message": "Add confirm=True to proceed with bulk stop operation"
+                }
+            
+            # Execute bulk stop
+            results = []
+            successful_stops = 0
+            failed_stops = 0
+            
+            for task_id in task_ids:
+                try:
+                    result = self.semaphore.stop_task(project_id, task_id)
+                    results.append({"task_id": task_id, "status": "stopped", "result": result})
+                    successful_stops += 1
+                except Exception as e:
+                    results.append({"task_id": task_id, "status": "failed", "error": str(e)})
+                    failed_stops += 1
+            
+            return {
+                "bulk_operation_complete": True,
+                "summary": {
+                    "total_tasks": len(task_ids),
+                    "successful_stops": successful_stops,
+                    "failed_stops": failed_stops
+                },
+                "results": results
+            }
+        except Exception as e:
+            self.handle_error(e, f"bulk stopping tasks for project {project_id}")
+    
+    async def restart_task(self, project_id: int, task_id: int) -> Dict[str, Any]:
+        """Restart a stopped or failed task.
+
+        Args:
+            project_id: ID of the project
+            task_id: ID of the task to restart
+
+        Returns:
+            Task restart result
+        """
+        try:
+            return self.semaphore.restart_task(project_id, task_id)
+        except Exception as e:
+            self.handle_error(e, f"restarting task {task_id}")
+    
+    async def bulk_restart_tasks(self, project_id: int, task_ids: List[int]) -> Dict[str, Any]:
+        """Restart multiple tasks in bulk.
+
+        Args:
+            project_id: ID of the project
+            task_ids: List of task IDs to restart
+
+        Returns:
+            Bulk task restart result
+        """
+        try:
+            results = []
+            for task_id in task_ids:
+                try:
+                    result = await self.restart_task(project_id, task_id)
+                    results.append({"task_id": task_id, "result": result})
+                except Exception as e:
+                    results.append({"task_id": task_id, "error": str(e)})
+            return {"results": results}
+        except Exception as e:
+            self.handle_error(e, f"bulk restarting tasks for project {project_id}")
+
+    async def run_task_with_monitoring(self, template_id: int, project_id: Optional[int] = None,
+                                     environment: Optional[Dict[str, str]] = None,
+                                     follow: bool = False, poll_interval: int = 3,
+                                     max_poll_duration: int = 300) -> Dict[str, Any]:
+        """Run a task with optional progress monitoring.
+
+        Args:
+            template_id: ID of the template to run
+            project_id: Optional project ID
+            environment: Optional environment variables
+            follow: Enable monitoring and status updates
+            poll_interval: Seconds between status checks (default: 3)
+            max_poll_duration: Maximum time to poll in seconds (default: 300)
+
+        Returns:
+            Task execution result with optional monitoring updates
+        """
+        try:
+            # Start the task using existing run_task method
+            task_result = await self.run_task(template_id, project_id, environment)
+            
+            if not follow:
+                return task_result
+            
+            # Extract task and project IDs for monitoring
+            task_id = task_result.get("id")
+            if not task_id:
+                return {
+                    "error": "Could not extract task ID for monitoring",
+                    "original_result": task_result
+                }
+            
+            # Determine project_id if not provided
+            if not project_id:
+                # Try to extract from task result or use template lookup
+                project_id = task_result.get("project_id")
+                if not project_id:
+                    return {
+                        "error": "Could not determine project ID for monitoring",
+                        "original_result": task_result
+                    }
+            
+            # Start monitoring
+            monitoring_result = await self._monitor_task_execution(
+                project_id, task_id, poll_interval, max_poll_duration
+            )
+            
+            return {
+                "task_started": task_result,
+                "monitoring": monitoring_result
+            }
+            
+        except Exception as e:
+            self.handle_error(e, f"running task with monitoring for template {template_id}")
+    
+    async def _monitor_task_execution(self, project_id: int, task_id: int, 
+                                    poll_interval: int, max_poll_duration: int) -> Dict[str, Any]:
+        """Monitor task execution with smart polling.
+
+        Args:
+            project_id: Project ID
+            task_id: Task ID to monitor
+            poll_interval: Seconds between polls
+            max_poll_duration: Maximum monitoring duration
+
+        Returns:
+            Monitoring results with status updates
+        """
+        status_updates = []
+        start_time = asyncio.get_event_loop().time()
+        last_status = None
+        poll_count = 0
+        
+        try:
+            while True:
+                current_time = asyncio.get_event_loop().time()
+                elapsed = current_time - start_time
+                
+                # Check timeout
+                if elapsed > max_poll_duration:
+                    status_updates.append({
+                        "timestamp": current_time,
+                        "message": f"Monitoring timeout after {max_poll_duration}s",
+                        "status": "timeout"
+                    })
+                    break
+                
+                # Get current task status
+                try:
+                    task = self.semaphore.get_task(project_id, task_id)
+                    current_status = task.get("status", "unknown")
+                    poll_count += 1
+                    
+                    # Log status change
+                    if current_status != last_status:
+                        status_updates.append({
+                            "timestamp": current_time,
+                            "status": current_status,
+                            "message": f"Task {task_id}: {last_status or 'started'} → {current_status}",
+                            "poll_count": poll_count
+                        })
+                        last_status = current_status
+                    
+                    # Check if task is complete
+                    if current_status in ["success", "error", "stopped"]:
+                        # Get final output
+                        try:
+                            output = self.semaphore.get_task_output(project_id, task_id)
+                            status_updates.append({
+                                "timestamp": current_time,
+                                "message": f"Task completed with status: {current_status}",
+                                "status": current_status,
+                                "output_available": True
+                            })
+                        except Exception as e:
+                            status_updates.append({
+                                "timestamp": current_time,
+                                "message": f"Task completed but output unavailable: {str(e)}",
+                                "status": current_status,
+                                "output_available": False
+                            })
+                        break
+                    
+                    # Continue polling for running/waiting tasks
+                    if current_status in ["running", "waiting"]:
+                        await asyncio.sleep(poll_interval)
+                        continue
+                    
+                    # Unknown status - continue polling but log it
+                    status_updates.append({
+                        "timestamp": current_time,
+                        "message": f"Unknown status: {current_status}, continuing to monitor",
+                        "status": current_status
+                    })
+                    await asyncio.sleep(poll_interval)
+                    
+                except Exception as e:
+                    status_updates.append({
+                        "timestamp": current_time,
+                        "message": f"Error polling task status: {str(e)}",
+                        "status": "error"
+                    })
+                    await asyncio.sleep(poll_interval)
+            
+            return {
+                "monitoring_complete": True,
+                "total_polls": poll_count,
+                "duration_seconds": elapsed,
+                "final_status": last_status,
+                "status_updates": status_updates
+            }
+            
+        except Exception as e:
+            return {
+                "monitoring_failed": True,
+                "error": str(e),
+                "status_updates": status_updates
+            }
+    
+    async def get_waiting_tasks(self, project_id: int) -> Dict[str, Any]:
+        """Get all tasks in waiting state for bulk operations.
+
+        Args:
+            project_id: ID of the project
+
+        Returns:
+            List of waiting tasks with bulk operation guidance
+        """
+        try:
+            result = await self.filter_tasks(project_id, status=["waiting"], limit=100)
+            waiting_tasks = result.get("tasks", [])
+            
+            if not waiting_tasks:
+                return {
+                    "message": "No tasks in waiting state found",
+                    "waiting_tasks": []
+                }
+            
+            # Extract task IDs for bulk operations
+            task_ids = [task["id"] for task in waiting_tasks]
+            
+            return {
+                "waiting_tasks": waiting_tasks,
+                "count": len(waiting_tasks),
+                "task_ids": task_ids,
+                "bulk_operations": {
+                    "stop_all": f"Use bulk_stop_tasks(project_id={project_id}, task_ids={task_ids})",
+                    "note": "Add confirm=True to execute bulk operations"
+                }
+            }
+        except Exception as e:
+            self.handle_error(e, f"getting waiting tasks for project {project_id}")

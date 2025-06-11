@@ -74,6 +74,19 @@ class SemaphoreMCPServer:
         self.mcp.tool()(self.task_tools.get_task_output)
         self.mcp.tool()(self.task_tools.get_latest_failed_task)
         
+        # Enhanced task tools - filtering and bulk operations
+        self.mcp.tool()(self.task_tools.filter_tasks)
+        self.mcp.tool()(self.task_tools.stop_task)
+        self.mcp.tool()(self.task_tools.bulk_stop_tasks)
+        self.mcp.tool()(self.task_tools.get_waiting_tasks)
+        
+        # Advanced task execution with monitoring
+        self.mcp.tool()(self.task_tools.run_task_with_monitoring)
+        
+        # Optional: Task restart operations (if needed)
+        # self.mcp.tool()(self.task_tools.restart_task)
+        # self.mcp.tool()(self.task_tools.bulk_restart_tasks)
+        
         # Environment and inventory operations are disabled due to API compatibility issues
         # These can be re-enabled when the compatibility issues are resolved
         
