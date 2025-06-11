@@ -21,7 +21,9 @@ The server uses FastMCP for efficient protocol handling and simple tool registra
 ### Working Features
 - ✅ Project operations (list, get, create, update, delete)
 - ✅ Template operations (list, get)
-- ✅ Task operations (list, get)
+- ✅ Task operations (list, get, filter by status, execute with monitoring)
+- ✅ Task control operations (stop, bulk stop with confirmation, restart)
+- ✅ Task status polling and streaming updates
 - ✅ MCP server tools for project management
 - ✅ JSON response formatting with content blocks
 

@@ -105,6 +105,28 @@ class SemaphoreAPIClient:
     def get_task_output(self, project_id: int, task_id: int) -> Dict[str, Any]:
         """Get the output of a task."""
         return self._request("GET", f"project/{project_id}/task/{task_id}/output")
+    
+    def stop_task(self, project_id: int, task_id: int) -> Dict[str, Any]:
+        """Stop a running task."""
+        return self._request("POST", f"project/{project_id}/tasks/{task_id}/stop")
+    
+    def get_last_tasks(self, project_id: int) -> List[Dict[str, Any]]:
+        """Get last 200 tasks for a project (more efficient than full list)."""
+        return self._request("GET", f"project/{project_id}/tasks/last")
+    
+    def get_task_raw_output(self, project_id: int, task_id: int) -> Dict[str, Any]:
+        """Get raw task output."""
+        return self._request("GET", f"project/{project_id}/tasks/{task_id}/raw_output")
+    
+    def delete_task(self, project_id: int, task_id: int) -> Dict[str, Any]:
+        """Delete task and its output."""
+        return self._request("DELETE", f"project/{project_id}/tasks/{task_id}")
+    
+    def restart_task(self, project_id: int, task_id: int) -> Dict[str, Any]:
+        """Restart a task (typically used for failed or stopped tasks)."""
+        # Note: This endpoint may need to be verified with SemaphoreUI API docs
+        # It might be POST /project/{project_id}/tasks/{task_id}/restart
+        return self._request("POST", f"project/{project_id}/tasks/{task_id}/restart")
         
     # Environment endpoints
     def list_environments(self, project_id: int) -> List[Dict[str, Any]]:
