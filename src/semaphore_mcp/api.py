@@ -148,14 +148,15 @@ class SemaphoreAPIClient:
         Returns:
             Created environment information
         """
-        # Simplest format for environment creation
+        # Include project_id in payload to match SemaphoreUI API requirements
         payload = {
-            "name": name
+            "name": name,
+            "project_id": project_id
         }
         
         # Encode environment variables
         if env_data:
-            # Try JSON string format (modern SemaphoreUI versions)
+            # Use JSON string format (modern SemaphoreUI versions)
             payload["json"] = json.dumps(env_data)
         
         return self._request("POST", f"project/{project_id}/environment", json=payload)
@@ -173,8 +174,11 @@ class SemaphoreAPIClient:
         Returns:
             Updated environment information
         """
-        # Minimal payload
-        payload = {}
+        # Include project_id and environment_id in payload to match SemaphoreUI API requirements
+        payload = {
+            "project_id": project_id,
+            "id": environment_id
+        }
         
         # Only update what's specified
         if name is not None:
@@ -211,10 +215,11 @@ class SemaphoreAPIClient:
         Returns:
             Created inventory information
         """
-        # Simplest payload for inventory creation
+        # Include project_id in payload to match SemaphoreUI API requirements
         payload = {
             "name": name,
-            "type": "file"
+            "type": "file",
+            "project_id": project_id
         }
         
         # Add inventory content
@@ -236,8 +241,12 @@ class SemaphoreAPIClient:
         Returns:
             Updated inventory information
         """
-        # Minimal payload
-        payload = {"type": "file"}
+        # Include project_id and inventory_id in payload to match SemaphoreUI API requirements
+        payload = {
+            "type": "file",
+            "project_id": project_id,
+            "id": inventory_id
+        }
         
         # Only update what's specified
         if name is not None:
