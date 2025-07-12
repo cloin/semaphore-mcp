@@ -92,22 +92,21 @@ class SemaphoreMCPServer:
         # self.mcp.tool()(self.task_tools.restart_task)
         # self.mcp.tool()(self.task_tools.bulk_restart_tasks)
         
-        # Environment and inventory operations are disabled due to API compatibility issues
-        # These can be re-enabled when the compatibility issues are resolved
+        # Environment and inventory tools - now fully working!
         
         # Environment tools
-        # self.mcp.tool()(self.environment_tools.list_environments)
-        # self.mcp.tool()(self.environment_tools.get_environment)
-        # self.mcp.tool()(self.environment_tools.create_environment)
-        # self.mcp.tool()(self.environment_tools.update_environment)
-        # self.mcp.tool()(self.environment_tools.delete_environment)
+        self.mcp.tool()(self.environment_tools.list_environments)
+        self.mcp.tool()(self.environment_tools.get_environment)
+        self.mcp.tool()(self.environment_tools.create_environment)
+        self.mcp.tool()(self.environment_tools.update_environment)
+        self.mcp.tool()(self.environment_tools.delete_environment)
         
         # Inventory tools
-        # self.mcp.tool()(self.environment_tools.list_inventory)
-        # self.mcp.tool()(self.environment_tools.get_inventory)
-        # self.mcp.tool()(self.environment_tools.create_inventory)
-        # self.mcp.tool()(self.environment_tools.update_inventory)
-        # self.mcp.tool()(self.environment_tools.delete_inventory)
+        self.mcp.tool()(self.environment_tools.list_inventory)
+        self.mcp.tool()(self.environment_tools.get_inventory)
+        self.mcp.tool()(self.environment_tools.create_inventory)
+        self.mcp.tool()(self.environment_tools.update_inventory)
+        self.mcp.tool()(self.environment_tools.delete_inventory)
     
     # Tool methods have been moved to dedicated tool classes
     

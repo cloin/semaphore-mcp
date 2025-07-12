@@ -24,15 +24,13 @@ The server uses FastMCP for efficient protocol handling and simple tool registra
 - ✅ Task operations (list, get, filter by status, execute with monitoring)
 - ✅ Task control operations (stop, bulk stop with confirmation, restart)
 - ✅ Task status polling and streaming updates
+- ✅ Environment management (list, get, create, update, delete)
+- ✅ Inventory management (list, get, create, update, delete)
+- ✅ LLM-based task failure analysis tools
 - ✅ MCP server tools for project management
 - ✅ JSON response formatting with content blocks
 
-### In Progress / Partially Working
-- [ ] Environment management API integration (partially implemented)
-- [ ] Inventory management API integration (partially implemented)
-
 ### To Do
-- [ ] Fix environment and inventory API payloads for SemaphoreUI compatibility
 - [ ] Enhance CI workflow with deeper test coverage
 - [ ] Comprehensive documentation for using the MCP server
 - [ ] Server-Sent Events (SSE) transport implementation
@@ -85,9 +83,15 @@ pytest -v
 pytest tests/test_api_client.py
 ```
 
-### Known Test Issues
+### Test Coverage
 
-Some tests for environment and inventory management are currently skipped due to API compatibility issues. These will be addressed in future updates.
+The project includes comprehensive tests for all major functionality:
+- Project operations (CRUD)
+- Template operations (list, get)
+- Task operations (CRUD, monitoring, bulk operations, failure analysis)
+- Environment operations (CRUD)
+- Inventory operations (CRUD)
+- Error handling scenarios
 
 ## Installation and Usage
 
@@ -182,15 +186,46 @@ If configured correctly, the server should start without errors. You can then pr
 
 The FastMCP server registers the following tools for interacting with SemaphoreUI:
 
+**Project Management:**
 - `list_projects` - List all projects
 - `get_project` - Get a specific project by ID
 - `create_project` - Create a new project
 - `update_project` - Update an existing project
 - `delete_project` - Delete a project
+
+**Template Operations:**
 - `list_templates` - List templates for a project
 - `get_template` - Get a specific template
-- `list_tasks` - List tasks for a template
+
+**Task Management:**
+- `list_tasks` - List tasks for a project
 - `get_task` - Get a specific task
+- `run_task` - Execute a task from a template
+- `get_task_output` - Get structured task output
+- `get_task_raw_output` - Get raw task output for analysis
+- `stop_task` - Stop a running task
+- `bulk_stop_tasks` - Stop multiple tasks with confirmation
+- `filter_tasks` - Filter tasks by status and other criteria
+- `run_task_with_monitoring` - Execute task with real-time monitoring
+
+**LLM-Based Failure Analysis:**
+- `analyze_task_failure` - Comprehensive analysis of failed tasks
+- `bulk_analyze_failures` - Pattern detection across multiple failures
+- `get_latest_failed_task` - Get most recent failed task
+
+**Environment Management:**
+- `list_environments` - List environments for a project
+- `get_environment` - Get a specific environment
+- `create_environment` - Create a new environment with variables
+- `update_environment` - Update environment name and variables
+- `delete_environment` - Delete an environment
+
+**Inventory Management:**
+- `list_inventory` - List inventory items for a project
+- `get_inventory` - Get a specific inventory item
+- `create_inventory` - Create a new inventory with content
+- `update_inventory` - Update inventory name and content
+- `delete_inventory` - Delete an inventory item
 
 ### Development with FastMCP
 

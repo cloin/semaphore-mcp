@@ -2,7 +2,7 @@
 Environment and inventory-related tools for Semaphore MCP.
 
 This module provides tools for interacting with Semaphore environments and inventory.
-NOTE: These tools are currently disabled due to API compatibility issues.
+These tools support full CRUD operations for both environments and inventory items.
 """
 import logging
 from typing import Dict, Any, List, Optional
@@ -14,8 +14,8 @@ logger = logging.getLogger(__name__)
 class EnvironmentTools(BaseTool):
     """Tools for working with Semaphore environments and inventory.
     
-    NOTE: These tools are currently disabled due to API compatibility issues.
-    They are included here as placeholders for future implementation.
+    Provides full CRUD operations for environments and inventory items in SemaphoreUI projects.
+    All operations have been tested and verified to work with SemaphoreUI API.
     """
     
     # Environment-related tools
@@ -49,35 +49,37 @@ class EnvironmentTools(BaseTool):
         except Exception as e:
             self.handle_error(e, f"getting environment {environment_id}")
     
-    async def create_environment(self, project_id: int, environment_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def create_environment(self, project_id: int, name: str, env_data: Dict[str, str]) -> Dict[str, Any]:
         """Create a new environment.
 
         Args:
             project_id: ID of the project
-            environment_data: Data for the new environment
+            name: Environment name
+            env_data: Environment variables as key-value pairs
 
         Returns:
             Created environment details
         """
         try:
-            return self.semaphore.create_environment(project_id, environment_data)
+            return self.semaphore.create_environment(project_id, name, env_data)
         except Exception as e:
-            self.handle_error(e, f"creating environment in project {project_id}")
+            self.handle_error(e, f"creating environment '{name}' in project {project_id}")
     
     async def update_environment(self, project_id: int, environment_id: int, 
-                              environment_data: Dict[str, Any]) -> Dict[str, Any]:
+                              name: str = None, env_data: Dict[str, str] = None) -> Dict[str, Any]:
         """Update an existing environment.
 
         Args:
             project_id: ID of the project
             environment_id: ID of the environment to update
-            environment_data: Updated environment data
+            name: Environment name (optional)
+            env_data: Environment variables as key-value pairs (optional)
 
         Returns:
             Updated environment details
         """
         try:
-            return self.semaphore.update_environment(project_id, environment_id, environment_data)
+            return self.semaphore.update_environment(project_id, environment_id, name, env_data)
         except Exception as e:
             self.handle_error(e, f"updating environment {environment_id}")
     
@@ -127,35 +129,37 @@ class EnvironmentTools(BaseTool):
         except Exception as e:
             self.handle_error(e, f"getting inventory {inventory_id}")
     
-    async def create_inventory(self, project_id: int, inventory_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def create_inventory(self, project_id: int, name: str, inventory_data: str) -> Dict[str, Any]:
         """Create a new inventory item.
 
         Args:
             project_id: ID of the project
-            inventory_data: Data for the new inventory item
+            name: Inventory name
+            inventory_data: Inventory content (typically Ansible inventory format)
 
         Returns:
             Created inventory item details
         """
         try:
-            return self.semaphore.create_inventory(project_id, inventory_data)
+            return self.semaphore.create_inventory(project_id, name, inventory_data)
         except Exception as e:
-            self.handle_error(e, f"creating inventory in project {project_id}")
+            self.handle_error(e, f"creating inventory '{name}' in project {project_id}")
     
     async def update_inventory(self, project_id: int, inventory_id: int, 
-                            inventory_data: Dict[str, Any]) -> Dict[str, Any]:
+                            name: str = None, inventory_data: str = None) -> Dict[str, Any]:
         """Update an existing inventory item.
 
         Args:
             project_id: ID of the project
             inventory_id: ID of the inventory item to update
-            inventory_data: Updated inventory item data
+            name: Inventory name (optional)
+            inventory_data: Inventory content (optional)
 
         Returns:
             Updated inventory item details
         """
         try:
-            return self.semaphore.update_inventory(project_id, inventory_id, inventory_data)
+            return self.semaphore.update_inventory(project_id, inventory_id, name, inventory_data)
         except Exception as e:
             self.handle_error(e, f"updating inventory {inventory_id}")
     
