@@ -83,6 +83,11 @@ class SemaphoreMCPServer:
         # Advanced task execution with monitoring
         self.mcp.tool()(self.task_tools.run_task_with_monitoring)
         
+        # LLM-based failure analysis tools
+        self.mcp.tool()(self.task_tools.get_task_raw_output)
+        self.mcp.tool()(self.task_tools.analyze_task_failure)
+        self.mcp.tool()(self.task_tools.bulk_analyze_failures)
+        
         # Optional: Task restart operations (if needed)
         # self.mcp.tool()(self.task_tools.restart_task)
         # self.mcp.tool()(self.task_tools.bulk_restart_tasks)

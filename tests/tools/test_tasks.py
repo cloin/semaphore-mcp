@@ -455,3 +455,211 @@ class TestTaskTools:
         assert "error" in result
         assert "project ID" in result["error"]
         assert "original_result" in result
+
+    @pytest.mark.asyncio
+    async def test_get_task_raw_output(self, task_tools):
+        """Test get_task_raw_output method."""
+        # Define mock return value
+        project_id = 1
+        task_id = 42
+        mock_raw_output = "This is the raw task output\nwith multiple lines\nand error details"
+        task_tools.semaphore.get_task_raw_output.return_value = mock_raw_output
+        
+        # Call the method
+        result = await task_tools.get_task_raw_output(project_id, task_id)
+        
+        # Verify the result
+        assert result == mock_raw_output
+        task_tools.semaphore.get_task_raw_output.assert_called_once_with(project_id, task_id)
+
+    @pytest.mark.asyncio
+    async def test_get_task_raw_output_error(self, task_tools):
+        """Test get_task_raw_output method with error."""
+        # Set up the mock to raise an exception
+        project_id = 1
+        task_id = 42
+        task_tools.semaphore.get_task_raw_output.side_effect = Exception("API error")
+        
+        # The method should raise a RuntimeError
+        with pytest.raises(RuntimeError) as excinfo:
+            await task_tools.get_task_raw_output(project_id, task_id)
+        
+        # Verify the error message
+        assert "Error during getting raw output for task" in str(excinfo.value)
+
+    @pytest.mark.asyncio
+    async def test_analyze_task_failure(self, task_tools):
+        """Test analyze_task_failure method for a failed task."""
+        project_id = 1
+        task_id = 42
+        template_id = 5
+        
+        # Mock failed task details
+        mock_task = {
+            "id": task_id,
+            "status": "error",
+            "created": "2023-06-01T10:00:00Z",
+            "started": "2023-06-01T10:01:00Z",
+            "ended": "2023-06-01T10:05:00Z",
+            "message": "Task failed",
+            "template_id": template_id,
+            "environment": {"VAR": "value"}
+        }
+        
+        # Mock template context
+        mock_template = {
+            "id": template_id,
+            "name": "Test Template",
+            "playbook": "test.yml",
+            "arguments": "--check",
+            "description": "Test playbook"
+        }
+        
+        # Mock project context
+        mock_projects = [{"id": project_id, "name": "Test Project", "repository": "git@github.com/test/repo.git"}]
+        
+        # Mock outputs
+        mock_structured_output = {"output": "Task failed", "status": "error"}
+        mock_raw_output = "TASK [test] failed: host unreachable"
+        
+        # Set up mocks
+        task_tools.semaphore.get_task.return_value = mock_task
+        task_tools.semaphore.get_template.return_value = mock_template
+        task_tools.semaphore.list_projects.return_value = mock_projects
+        task_tools.semaphore.get_task_output.return_value = mock_structured_output
+        task_tools.semaphore.get_task_raw_output.return_value = mock_raw_output
+        
+        # Call the method
+        result = await task_tools.analyze_task_failure(project_id, task_id)
+        
+        # Verify the result structure
+        assert result["analysis_ready"] is True
+        assert result["task_details"]["id"] == task_id
+        assert result["task_details"]["status"] == "error"
+        assert result["task_details"]["template_id"] == template_id
+        
+        assert result["project_context"]["id"] == project_id
+        assert result["project_context"]["name"] == "Test Project"
+        
+        assert result["template_context"]["id"] == template_id
+        assert result["template_context"]["name"] == "Test Template"
+        
+        assert result["outputs"]["raw"] == mock_raw_output
+        assert result["outputs"]["structured"] == mock_structured_output
+        assert result["outputs"]["has_raw_output"] is True
+        assert result["outputs"]["has_structured_output"] is True
+        
+        # Verify analysis guidance is included
+        assert "analysis_guidance" in result
+        assert "focus_areas" in result["analysis_guidance"]
+        assert "common_failure_patterns" in result["analysis_guidance"]
+
+    @pytest.mark.asyncio
+    async def test_analyze_task_failure_non_failed_task(self, task_tools):
+        """Test analyze_task_failure method for a non-failed task."""
+        project_id = 1
+        task_id = 42
+        
+        # Mock successful task
+        mock_task = {
+            "id": task_id,
+            "status": "success",
+            "created": "2023-06-01T10:00:00Z"
+        }
+        
+        task_tools.semaphore.get_task.return_value = mock_task
+        
+        # Call the method
+        result = await task_tools.analyze_task_failure(project_id, task_id)
+        
+        # Should return warning about non-failed task
+        assert "warning" in result
+        assert "success" in result["warning"]
+        assert result["analysis_applicable"] is False
+
+    @pytest.mark.asyncio
+    async def test_bulk_analyze_failures(self, task_tools):
+        """Test bulk_analyze_failures method."""
+        project_id = 1
+        
+        # Mock failed tasks from filter_tasks
+        failed_tasks = [
+            {"id": 1, "status": "error"},
+            {"id": 2, "status": "error"},
+            {"id": 3, "status": "error"}
+        ]
+        filter_result = {
+            "tasks": failed_tasks,
+            "statistics": {"total_tasks": 10}
+        }
+        
+        # Mock individual task analyses
+        mock_analysis_1 = {
+            "analysis_ready": True,
+            "template_context": {"name": "Template A"},
+            "outputs": {"raw": "connection timeout error"}
+        }
+        mock_analysis_2 = {
+            "analysis_ready": True,
+            "template_context": {"name": "Template A"},
+            "outputs": {"raw": "authentication failed"}
+        }
+        mock_analysis_3 = {
+            "analysis_ready": True,
+            "template_context": {"name": "Template B"},
+            "outputs": {"raw": "syntax error in playbook"}
+        }
+        
+        # Set up mocks
+        task_tools.filter_tasks = AsyncMock(return_value=filter_result)
+        task_tools.analyze_task_failure = AsyncMock(side_effect=[
+            mock_analysis_1, mock_analysis_2, mock_analysis_3
+        ])
+        
+        # Call the method
+        result = await task_tools.bulk_analyze_failures(project_id, limit=5)
+        
+        # Verify the result
+        assert result["bulk_analysis_complete"] is True
+        assert result["analyzed_tasks"] == 3
+        assert result["total_failed_tasks"] == 3
+        
+        # Check template failure breakdown
+        assert "template_failure_breakdown" in result
+        assert result["template_failure_breakdown"]["Template A"] == 2
+        assert result["template_failure_breakdown"]["Template B"] == 1
+        
+        # Check error pattern analysis
+        assert "error_pattern_analysis" in result
+        assert result["error_pattern_analysis"]["connection_error"] == 1
+        assert result["error_pattern_analysis"]["auth_error"] == 1
+        assert result["error_pattern_analysis"]["syntax_error"] == 1
+        
+        # Check insights
+        assert "insights" in result
+        assert len(result["insights"]) >= 1
+        
+        # Check recommendations
+        assert "recommendations" in result
+        assert len(result["recommendations"]) > 0
+
+    @pytest.mark.asyncio
+    async def test_bulk_analyze_failures_no_failed_tasks(self, task_tools):
+        """Test bulk_analyze_failures when no failed tasks exist."""
+        project_id = 1
+        
+        # Mock empty result from filter_tasks
+        filter_result = {
+            "tasks": [],
+            "statistics": {"total_tasks": 5}
+        }
+        
+        task_tools.filter_tasks = AsyncMock(return_value=filter_result)
+        
+        # Call the method
+        result = await task_tools.bulk_analyze_failures(project_id)
+        
+        # Should return message about no failed tasks
+        assert "message" in result
+        assert "No failed tasks found" in result["message"]
+        assert result["failed_task_count"] == 0
