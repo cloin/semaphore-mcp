@@ -4,9 +4,9 @@ Configuration module for SemaphoreMCP.
 Handles environment variable loading and configuration management.
 """
 
-import os
 import logging
-from typing import Dict, Optional
+import os
+from typing import Optional
 
 from dotenv import load_dotenv
 
@@ -17,18 +17,18 @@ load_dotenv()
 DEFAULT_CONFIG = {
     "SEMAPHORE_URL": "http://localhost:3000",
     "SEMAPHORE_API_TOKEN": "",
-    "MCP_LOG_LEVEL": "INFO"
+    "MCP_LOG_LEVEL": "INFO",
 }
 
 
 def get_config(key: str, default: Optional[str] = None) -> str:
     """
     Get a configuration value from environment variables.
-    
+
     Args:
         key: Configuration key
         default: Default value if not found in environment
-        
+
     Returns:
         Configuration value
     """
@@ -38,7 +38,7 @@ def get_config(key: str, default: Optional[str] = None) -> str:
 def get_log_level() -> int:
     """
     Get the configured log level.
-    
+
     Returns:
         Log level as a logging module constant
     """
@@ -48,7 +48,7 @@ def get_log_level() -> int:
         "INFO": logging.INFO,
         "WARNING": logging.WARNING,
         "ERROR": logging.ERROR,
-        "CRITICAL": logging.CRITICAL
+        "CRITICAL": logging.CRITICAL,
     }
     return level_map.get(level_name, logging.INFO)
 
@@ -57,5 +57,5 @@ def configure_logging() -> None:
     """Configure logging based on environment variables."""
     logging.basicConfig(
         level=get_log_level(),
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
