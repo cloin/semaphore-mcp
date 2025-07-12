@@ -2,12 +2,18 @@
 Tests for the configuration module.
 """
 
-import os
 import logging
-import pytest
+import os
 from unittest.mock import patch
 
-from semaphore_mcp.config import get_config, get_log_level, configure_logging, DEFAULT_CONFIG
+import pytest
+
+from semaphore_mcp.config import (
+    DEFAULT_CONFIG,
+    configure_logging,
+    get_config,
+    get_log_level,
+)
 
 
 class TestConfig:
@@ -18,11 +24,11 @@ class TestConfig:
         # Test with a custom default for non-existent key
         result = get_config("NON_EXISTENT_KEY", "custom_default")
         assert result == "custom_default"
-        
+
         # Test with no default provided for non-existent key
         result = get_config("NON_EXISTENT_KEY")
         assert result == ""
-        
+
         # Test that actual config values can be retrieved
         # (we don't test against DEFAULT_CONFIG directly since env vars may override)
         result = get_config("SEMAPHORE_URL")
@@ -34,7 +40,7 @@ class TestConfig:
         """Test getting config from environment variables."""
         result = get_config("TEST_CONFIG_KEY")
         assert result == "test_value"
-        
+
         # Environment should override default
         result = get_config("TEST_CONFIG_KEY", "default_value")
         assert result == "test_value"
@@ -73,7 +79,7 @@ class TestConfig:
         """Test getting log level with no environment variable defaults to INFO."""
         # Ensure the environment variable is not set
         with patch.dict(os.environ, {}, clear=True):
-            with patch('semaphore_mcp.config.get_config', return_value="INFO"):
+            with patch("semaphore_mcp.config.get_config", return_value="INFO"):
                 result = get_log_level()
                 assert result == logging.INFO
 
@@ -99,7 +105,7 @@ class TestConfig:
         assert "SEMAPHORE_URL" in DEFAULT_CONFIG
         assert "SEMAPHORE_API_TOKEN" in DEFAULT_CONFIG
         assert "MCP_LOG_LEVEL" in DEFAULT_CONFIG
-        
+
         assert DEFAULT_CONFIG["SEMAPHORE_URL"] == "http://localhost:3000"
         assert DEFAULT_CONFIG["SEMAPHORE_API_TOKEN"] == ""
         assert DEFAULT_CONFIG["MCP_LOG_LEVEL"] == "INFO"
@@ -116,7 +122,7 @@ class TestConfig:
         # Test with explicit empty string default for non-existent key
         result = get_config("NON_EXISTENT", "")
         assert result == ""
-        
+
         # Test that we can retrieve token (might be set in environment)
         result = get_config("SEMAPHORE_API_TOKEN")
         # Don't assert on specific value since it might be set in env

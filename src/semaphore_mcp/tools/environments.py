@@ -4,22 +4,24 @@ Environment and inventory-related tools for Semaphore MCP.
 This module provides tools for interacting with Semaphore environments and inventory.
 These tools support full CRUD operations for both environments and inventory items.
 """
+
 import logging
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, Optional
 
 from .base import BaseTool
 
 logger = logging.getLogger(__name__)
 
+
 class EnvironmentTools(BaseTool):
     """Tools for working with Semaphore environments and inventory.
-    
+
     Provides full CRUD operations for environments and inventory items in SemaphoreUI projects.
     All operations have been tested and verified to work with SemaphoreUI API.
     """
-    
+
     # Environment-related tools
-    
+
     async def list_environments(self, project_id: int) -> Dict[str, Any]:
         """List all environments for a project.
 
@@ -33,8 +35,10 @@ class EnvironmentTools(BaseTool):
             return self.semaphore.list_environments(project_id)
         except Exception as e:
             self.handle_error(e, f"listing environments for project {project_id}")
-    
-    async def get_environment(self, project_id: int, environment_id: int) -> Dict[str, Any]:
+
+    async def get_environment(
+        self, project_id: int, environment_id: int
+    ) -> Dict[str, Any]:
         """Get details of a specific environment.
 
         Args:
@@ -48,8 +52,10 @@ class EnvironmentTools(BaseTool):
             return self.semaphore.get_environment(project_id, environment_id)
         except Exception as e:
             self.handle_error(e, f"getting environment {environment_id}")
-    
-    async def create_environment(self, project_id: int, name: str, env_data: Dict[str, str]) -> Dict[str, Any]:
+
+    async def create_environment(
+        self, project_id: int, name: str, env_data: Dict[str, str]
+    ) -> Dict[str, Any]:
         """Create a new environment.
 
         Args:
@@ -63,10 +69,17 @@ class EnvironmentTools(BaseTool):
         try:
             return self.semaphore.create_environment(project_id, name, env_data)
         except Exception as e:
-            self.handle_error(e, f"creating environment '{name}' in project {project_id}")
-    
-    async def update_environment(self, project_id: int, environment_id: int, 
-                              name: str = None, env_data: Dict[str, str] = None) -> Dict[str, Any]:
+            self.handle_error(
+                e, f"creating environment '{name}' in project {project_id}"
+            )
+
+    async def update_environment(
+        self,
+        project_id: int,
+        environment_id: int,
+        name: Optional[str] = None,
+        env_data: Optional[Dict[str, str]] = None,
+    ) -> Dict[str, Any]:
         """Update an existing environment.
 
         Args:
@@ -79,11 +92,15 @@ class EnvironmentTools(BaseTool):
             Updated environment details
         """
         try:
-            return self.semaphore.update_environment(project_id, environment_id, name, env_data)
+            return self.semaphore.update_environment(
+                project_id, environment_id, name, env_data
+            )
         except Exception as e:
             self.handle_error(e, f"updating environment {environment_id}")
-    
-    async def delete_environment(self, project_id: int, environment_id: int) -> Dict[str, Any]:
+
+    async def delete_environment(
+        self, project_id: int, environment_id: int
+    ) -> Dict[str, Any]:
         """Delete an environment.
 
         Args:
@@ -97,9 +114,9 @@ class EnvironmentTools(BaseTool):
             return self.semaphore.delete_environment(project_id, environment_id)
         except Exception as e:
             self.handle_error(e, f"deleting environment {environment_id}")
-    
+
     # Inventory-related tools
-    
+
     async def list_inventory(self, project_id: int) -> Dict[str, Any]:
         """List all inventory items for a project.
 
@@ -113,7 +130,7 @@ class EnvironmentTools(BaseTool):
             return self.semaphore.list_inventory(project_id)
         except Exception as e:
             self.handle_error(e, f"listing inventory for project {project_id}")
-    
+
     async def get_inventory(self, project_id: int, inventory_id: int) -> Dict[str, Any]:
         """Get details of a specific inventory item.
 
@@ -128,8 +145,10 @@ class EnvironmentTools(BaseTool):
             return self.semaphore.get_inventory(project_id, inventory_id)
         except Exception as e:
             self.handle_error(e, f"getting inventory {inventory_id}")
-    
-    async def create_inventory(self, project_id: int, name: str, inventory_data: str) -> Dict[str, Any]:
+
+    async def create_inventory(
+        self, project_id: int, name: str, inventory_data: str
+    ) -> Dict[str, Any]:
         """Create a new inventory item.
 
         Args:
@@ -144,9 +163,14 @@ class EnvironmentTools(BaseTool):
             return self.semaphore.create_inventory(project_id, name, inventory_data)
         except Exception as e:
             self.handle_error(e, f"creating inventory '{name}' in project {project_id}")
-    
-    async def update_inventory(self, project_id: int, inventory_id: int, 
-                            name: str = None, inventory_data: str = None) -> Dict[str, Any]:
+
+    async def update_inventory(
+        self,
+        project_id: int,
+        inventory_id: int,
+        name: Optional[str] = None,
+        inventory_data: Optional[str] = None,
+    ) -> Dict[str, Any]:
         """Update an existing inventory item.
 
         Args:
@@ -159,11 +183,15 @@ class EnvironmentTools(BaseTool):
             Updated inventory item details
         """
         try:
-            return self.semaphore.update_inventory(project_id, inventory_id, name, inventory_data)
+            return self.semaphore.update_inventory(
+                project_id, inventory_id, name, inventory_data
+            )
         except Exception as e:
             self.handle_error(e, f"updating inventory {inventory_id}")
-    
-    async def delete_inventory(self, project_id: int, inventory_id: int) -> Dict[str, Any]:
+
+    async def delete_inventory(
+        self, project_id: int, inventory_id: int
+    ) -> Dict[str, Any]:
         """Delete an inventory item.
 
         Args:
