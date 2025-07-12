@@ -8,23 +8,61 @@ on:
   workflow_dispatch:
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+          
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff mypy black isort
+          pip install -r requirements.txt
+          pip install -e .
+          
+      - name: Run ruff linter
+        run: ruff check src tests
+        
+      - name: Run black formatter check
+        run: black --check src tests
+        
+      - name: Run isort import sorter check
+        run: isort --check-only src tests
+        
+      - name: Run mypy type checker
+        run: mypy src --ignore-missing-imports --disable-error-code=import-untyped
+
   test:
     runs-on: ubuntu-latest
     environment: test
+    needs: lint
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11', '3.12']
+      fail-fast: false
     
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
           
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install -e .
+          # Install additional test dependencies
+          pip install pytest-cov pytest-xvfb
           
       # Docker is pre-installed on GitHub Actions runners, so no installation needed
       
@@ -70,6 +108,14 @@ jobs:
           echo "Waiting for SemaphoreUI to start..."
           sleep 15
           
+      - name: Verify SemaphoreUI is running
+        run: |
+          # Check if the container is running
+          docker ps | grep semaphore-dev
+          
+          # Check if the service is responding
+          curl -f http://localhost:3000/api/ping || curl -f http://localhost:3000/ || echo "SemaphoreUI might not be fully ready yet"
+          
       - name: Generate API token
         id: generate-semaphore-token
         run: |
@@ -82,7 +128,7 @@ jobs:
           ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
           ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
                
-      - name: Run tests
+      - name: Run tests with coverage
         run: |
           # Make sure to use the token from the previous step
           export SEMAPHORE_API_TOKEN="${{ steps.generate-semaphore-token.outputs.token }}"
@@ -107,15 +153,31 @@ jobs:
           echo "Contents of .env file:"
           cat .env | sed 's/\(SEMAPHORE_API_TOKEN=\)\(.*\)/\1\2.../' 
           
-          # Run tests with explicit env variables
-          pytest tests/ -v
+          # Run tests with coverage reporting and verbose output
+          pytest tests/ -v --cov=src/semaphore_mcp --cov-report=term-missing --cov-report=xml --cov-fail-under=80
         env:
           SEMAPHORE_URL: http://localhost:3000
           # Use the token from previous step
           SEMAPHORE_API_TOKEN: ${{ steps.generate-semaphore-token.outputs.token }}
+      
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+          
+      - name: Test summary
+        if: always()
+        run: |
+          echo "Test execution completed"
+          echo "Total tests collected: $(python3 -m pytest tests/ --collect-only -q | grep "test session starts" -A 50 | grep "collected" | sed 's/.*collected \([0-9]*\) item.*/\1/' || echo 'unknown')"
           
       - name: Cleanup
         if: always()
         run: |
           docker stop semaphore-dev || true
           docker rm semaphore-dev || true
+          docker volume rm semaphore-data || true
