@@ -474,7 +474,9 @@ class TestTaskTools:
 
         # Run task with monitoring but no project_id
         result = await task_tools.run_task_with_monitoring(
-            template_id=template_id, project_id=None, follow=True  # Missing project_id
+            template_id=template_id,
+            project_id=None,
+            follow=True,  # Missing project_id
         )
 
         # Should return error
