@@ -1,7 +1,91 @@
-# semaphore-mcp
-MCP (Model Context Protocol) Server for SemaphoreUI
+# SemaphoreUI MCP Server
 
-This project implements a MCP server for SemaphoreUI, a self-hosted Ansible UI. It encapsulates the SemaphoreUI API and provides a simple interface for AI applications and other services to interact with SemaphoreUI using the Model Context Protocol standard. The server enables automation of common SemaphoreUI tasks like managing projects, templates, tasks, environments, and inventory.
+A Model Context Protocol (MCP) server that provides AI assistants with powerful automation capabilities for SemaphoreUI - a modern, web-based Ansible management platform.
+
+## 🎯 What is this?
+
+This MCP server bridges AI assistants (like Claude) with SemaphoreUI, enabling you to:
+
+- **Automate Ansible playbook execution** through natural language
+- **Monitor and analyze task failures** with AI-powered insights
+- **Manage infrastructure projects** with conversational commands
+- **Streamline DevOps workflows** by combining AI reasoning with automation
+
+Perfect for DevOps teams who want to leverage AI for infrastructure management while maintaining the power and flexibility of Ansible.
+
+## 🎯 Use Cases
+
+### For DevOps Engineers
+- **Incident Response**: "Find all failed deployments in the last 6 hours and analyze the errors"
+- **Routine Operations**: "Deploy the latest version to staging and run the smoke tests"
+- **Infrastructure Scaling**: "Add the new servers to our production inventory and update the load balancer config"
+
+### For Platform Teams  
+- **Self-Service**: Enable developers to deploy to staging environments through conversational AI
+- **Monitoring**: Get intelligent summaries of deployment status and failure patterns
+- **Compliance**: Ensure deployment procedures are followed consistently
+
+### For Site Reliability Engineers
+- **Automation**: Convert manual runbooks into conversational workflows
+- **Troubleshooting**: AI-powered analysis of failure logs and suggested remediation
+- **Capacity Planning**: Monitor deployment patterns and resource usage trends
+
+## ⚡ Quick Start
+
+1. **Spin up SemaphoreUI locally:**
+```bash
+docker run -d \
+  --name semaphore-dev \
+  -p 3000:3000 \
+  -e SEMAPHORE_DB_DIALECT=bolt \
+  -e SEMAPHORE_ADMIN_PASSWORD=admin123 \
+  -e SEMAPHORE_ADMIN_NAME=admin \
+  -e SEMAPHORE_ADMIN_EMAIL=admin@localhost \
+  -e SEMAPHORE_ADMIN=admin \
+  -v semaphore-data:/etc/semaphore \
+  semaphoreui/semaphore:latest
+```
+
+2. **Install and configure:**
+```bash
+git clone https://github.com/yourusername/semaphore-mcp.git
+cd semaphore-mcp
+uv venv && source .venv/bin/activate
+uv pip install -e .
+
+# Generate API token automatically
+./scripts/generate-token.sh admin admin123
+```
+
+3. **Test the server:**
+```bash
+python scripts/start_server.py
+```
+
+4. **Connect to Claude Desktop** (see [Claude Integration](#claude-desktop-integration) below)
+
+## 🚀 What You Can Do
+
+Once connected to an AI assistant, you can perform complex automation tasks through natural conversation:
+
+### Ansible Automation
+- "Run the database backup playbook on production servers"
+- "Execute the server update template and monitor progress"
+- "Show me all failed deployments from the last week"
+
+### Infrastructure Management  
+- "Create a new environment for staging with these variables"
+- "List all running tasks and stop any that are failing"
+- "Analyze the last deployment failure and suggest fixes"
+
+### Project Operations
+- "Set up a new project for the web application deployment"
+- "Show me all templates in the infrastructure project"
+- "Update the production inventory with new server IPs"
+
+The AI can reason about your infrastructure, suggest solutions, and execute actions all in one conversation.
+
+## 🛠️ Features
 
 The server uses FastMCP for efficient protocol handling and simple tool registration.
 
@@ -93,32 +177,50 @@ The project includes comprehensive tests for all major functionality:
 - Inventory operations (CRUD)
 - Error handling scenarios
 
-## Installation and Usage
+## 📦 Installation
 
 ### Prerequisites
-- Python 3.8+
-- SemaphoreUI instance (see Testing section for local setup)
+- Python 3.9+
+- SemaphoreUI instance (local or remote)
 - SemaphoreUI API token
-- mcp >= 1.9.3 package (for FastMCP support)
 
-### Installation
-
-#### Using uv
+### Option 1: Using uv (Recommended)
 
 ```bash
 # Clone the repository
 git clone https://github.com/yourusername/semaphore-mcp.git
 cd semaphore-mcp
 
-# Install uv if you don't have it already
+# Install uv if you don't have it
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Create a virtual environment and install the package
+# Create virtual environment and install
 uv venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-
-# Install the package in development mode
 uv pip install -e .
+```
+
+### Option 2: Using pip
+
+```bash
+# Clone and set up with standard pip
+git clone https://github.com/yourusername/semaphore-mcp.git
+cd semaphore-mcp
+
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+pip install -e .
+```
+
+### Option 3: Using poetry
+
+```bash
+# If you prefer poetry
+git clone https://github.com/yourusername/semaphore-mcp.git
+cd semaphore-mcp
+
+poetry install
+poetry shell
 ```
 
 ### Configuration
@@ -144,13 +246,32 @@ To generate a token automatically:
 python scripts/start_server.py
 ```
 
-### Claude Desktop Client Integration
+## Claude Desktop Integration
 
-To use this MCP with the Claude Desktop Client:
+### Step 1: Configure the MCP Server
 
-1. Setup a virtual environment with all dependencies using your preferred package manager.
+First, ensure your semaphore-mcp is properly set up:
 
-2. Then update your `claude_desktop_config.json` file (typically located at `~/.config/claude-desktop/claude_desktop_config.json`) with the following configuration:
+```bash
+# Navigate to your project directory
+cd /path/to/semaphore-mcp
+
+# Create .env file with your configuration
+echo "SEMAPHORE_URL=http://localhost:3000" > .env
+echo "SEMAPHORE_API_TOKEN=your-token-here" >> .env
+
+# Or generate token automatically
+./scripts/generate-token.sh admin admin123 >> .env
+```
+
+### Step 2: Update Claude Desktop Configuration
+
+Edit your Claude Desktop config file:
+- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+- **Linux**: `~/.config/claude-desktop/claude_desktop_config.json`
+
+Add this configuration:
 
 ```json
 {
@@ -159,28 +280,48 @@ To use this MCP with the Claude Desktop Client:
       "command": "bash",
       "args": [
         "-c",
-        "cd /path/to/semaphore-mcp && python -m scripts.start_server"
-      ]
+        "cd /absolute/path/to/semaphore-mcp && source .venv/bin/activate && python scripts/start_server.py"
+      ],
+      "env": {
+        "SEMAPHORE_URL": "http://localhost:3000",
+        "SEMAPHORE_API_TOKEN": "your-token-here"
+      }
     }
   }
 }
 ```
 
-Make sure to:
-1. Replace `/path/to/semaphore-mcp` with the absolute path to your semaphore-mcp directory
-2. Ensure your `.env` file with SEMAPHORE_API_TOKEN is properly configured in the semaphore-mcp directory
-3. The environment where bash is running should have all the required dependencies installed (`pip install -e . mcp>=1.9.3`)
+**Important**: Replace `/absolute/path/to/semaphore-mcp` with the full path to your semaphore-mcp directory.
 
-#### Verifying Claude Desktop Setup
+### Step 3: Test the Configuration
 
-To verify that your setup works correctly before using it with Claude Desktop:
+Verify your setup works before connecting to Claude:
 
 ```bash
-# Test the command exactly as Claude Desktop would run it
-bash -c "cd /path/to/semaphore-mcp && python -m scripts.start_server"
+# Test the exact command Claude Desktop will run
+bash -c "cd /absolute/path/to/semaphore-mcp && source .venv/bin/activate && python scripts/start_server.py"
 ```
 
-If configured correctly, the server should start without errors. You can then press Ctrl+C to stop it. After verifying, restart Claude Desktop to apply the configuration changes.
+You should see output like:
+```
+INFO:semaphore_mcp:Starting SemaphoreMCP server...
+INFO:semaphore_mcp:Connected to SemaphoreUI at http://localhost:3000
+```
+
+Press `Ctrl+C` to stop the test.
+
+### Step 4: Restart Claude Desktop
+
+After updating the configuration file, restart Claude Desktop to apply the changes.
+
+### Step 5: Verify Connection
+
+In Claude Desktop, start a new conversation and try:
+```
+List all projects in SemaphoreUI
+```
+
+If successful, Claude will use the MCP server to fetch and display your projects.
 
 ### Available MCP Tools
 
@@ -240,14 +381,144 @@ def list_projects():
 
 This approach allows for easy extension with new tools as needed. Check the `server.py` file for implementation details.
 
-## API Documentation
+## 📖 Practical Usage Examples
 
-https://docs.semaphoreui.com/administration-guide/api/
+### Example 1: Setting Up a New Project
 
-## API Reference
+**You say to Claude:**
+> "I need to set up a new project for deploying our web application. Create a project called 'webapp-deploy' and add a staging environment with these variables: APP_ENV=staging, DB_HOST=staging-db.example.com"
 
-https://semaphoreui.com/api-docs/
+**Claude will:**
+1. Create the project using `create_project`
+2. Create a staging environment using `create_environment`
+3. Confirm the setup and provide you with project details
 
-## MCP Reference
+### Example 2: Monitoring and Troubleshooting
 
-https://modelcontextprotocol.io/introduction
+**You say to Claude:**
+> "Check if there are any failed tasks in the last hour and analyze what went wrong"
+
+**Claude will:**
+1. Use `filter_tasks` to find recent failed tasks
+2. Use `analyze_task_failure` to examine error logs
+3. Provide detailed analysis and suggested fixes
+4. Optionally restart tasks if appropriate
+
+### Example 3: Automated Deployment Workflow
+
+**You say to Claude:**
+> "Run the 'deploy-app' template on production, monitor the progress, and let me know when it's done"
+
+**Claude will:**
+1. Execute the template using `run_task_with_monitoring`
+2. Stream real-time progress updates
+3. Notify you of completion status
+4. If it fails, automatically analyze the failure
+
+### Example 4: Infrastructure Inventory Management
+
+**You say to Claude:**
+> "Update our production inventory to add these new servers: web-03.prod.example.com, web-04.prod.example.com"
+
+**Claude will:**
+1. Retrieve current inventory using `get_inventory`
+2. Parse and update the inventory content
+3. Use `update_inventory` to save changes
+4. Confirm the servers were added successfully
+
+### Example 5: Bulk Operations
+
+**You say to Claude:**
+> "I see there are several stuck tasks running for more than 2 hours. Please stop them all safely"
+
+**Claude will:**
+1. Use `filter_tasks` to find long-running tasks
+2. Use `bulk_stop_tasks` with confirmation prompts
+3. Provide summary of stopped tasks
+4. Suggest investigating why tasks got stuck
+
+## 🔧 Troubleshooting
+
+### Common Issues
+
+**Connection refused to SemaphoreUI**
+- Ensure SemaphoreUI is running on the configured URL
+- Check firewall settings if using remote SemaphoreUI
+- Verify the URL format (include http:// or https://)
+
+**Authentication errors**
+- Regenerate your API token using `./scripts/generate-token.sh`
+- Ensure the token is correctly set in your `.env` file
+- Check that the user account has appropriate permissions
+
+**Claude Desktop not connecting**
+- Verify the absolute path in your config is correct
+- Test the command manually in terminal first
+- Check Claude Desktop logs for specific error messages
+- Ensure virtual environment has all required dependencies
+
+**Tasks failing to execute**
+- Verify your templates are properly configured in SemaphoreUI
+- Check that inventory and environment variables are set correctly
+- Ensure your Ansible playbooks are accessible to SemaphoreUI
+
+### Debug Mode
+
+Enable detailed logging by setting:
+```bash
+export MCP_LOG_LEVEL=DEBUG
+```
+
+This will provide verbose output about MCP communications and API calls.
+
+## 🤝 Contributing
+
+We welcome contributions! Here's how to get started:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes and add tests
+4. Run the test suite (`pytest`)
+5. Commit your changes (`git commit -m 'Add amazing feature'`)
+6. Push to the branch (`git push origin feature/amazing-feature`)
+7. Open a Pull Request
+
+### Development Setup
+
+```bash
+# Clone your fork
+git clone https://github.com/yourusername/semaphore-mcp.git
+cd semaphore-mcp
+
+# Install in development mode
+uv venv && source .venv/bin/activate
+uv pip install -e ".[dev]"
+
+# Run tests
+pytest
+
+# Run linting
+black src/ tests/
+isort src/ tests/
+```
+
+## 📜 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🔗 Related Resources
+
+- **SemaphoreUI Documentation**: https://docs.semaphoreui.com/
+- **SemaphoreUI API Reference**: https://semaphoreui.com/api-docs/
+- **Model Context Protocol**: https://modelcontextprotocol.io/introduction
+- **FastMCP Documentation**: https://github.com/jlowin/fastmcp
+
+## 📞 Support
+
+- **Issues**: Report bugs and request features on [GitHub Issues](https://github.com/yourusername/semaphore-mcp/issues)
+- **Discussions**: Join conversations on [GitHub Discussions](https://github.com/yourusername/semaphore-mcp/discussions)
+- **SemaphoreUI Community**: Get help with SemaphoreUI at their [community forums](https://github.com/ansible-semaphore/semaphore)
+
+---
+
+**⭐ If this project helps you, please give it a star on GitHub!**
