@@ -146,6 +146,25 @@ class TaskTools(BaseTool):
         try:
             return self.semaphore.get_task(project_id, task_id)
         except Exception as e:
+            # If individual task fetch fails, try to find it in the task list
+            if "404" in str(e):
+                try:
+                    tasks = self.semaphore.list_tasks(project_id)
+                    if isinstance(tasks, list):
+                        matching_task = next(
+                            (task for task in tasks if task.get("id") == task_id), None
+                        )
+                        if matching_task:
+                            return {
+                                "task": matching_task,
+                                "note": "Task found in list but individual endpoint unavailable",
+                            }
+                    self.handle_error(
+                        e,
+                        f"getting task {task_id}. Task may have been deleted or ID format may be incorrect",
+                    )
+                except Exception:
+                    pass
             self.handle_error(e, f"getting task {task_id}")
 
     async def run_task(

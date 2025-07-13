@@ -19,10 +19,11 @@ class ProjectTools(BaseTool):
         """List all projects in SemaphoreUI.
 
         Returns:
-            A list of projects with their details.
+            A dictionary containing the list of projects.
         """
         try:
-            return self.semaphore.list_projects()
+            projects = self.semaphore.list_projects()
+            return {"projects": projects}
         except Exception as e:
             self.handle_error(e, "listing projects")
 

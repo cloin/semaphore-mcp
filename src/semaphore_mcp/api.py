@@ -50,7 +50,7 @@ class SemaphoreAPIClient:
         """
         url = f"{self.base_url}/api/{endpoint}"
         response = self.session.request(method, url, **kwargs)
-        
+
         try:
             response.raise_for_status()
         except requests.exceptions.HTTPError as e:
@@ -59,7 +59,7 @@ class SemaphoreAPIClient:
                 raise requests.exceptions.HTTPError(
                     f"Resource not found (404): {url}. "
                     f"The requested resource may have been deleted or the ID may be incorrect.",
-                    response=response
+                    response=response,
                 ) from e
             raise
 
@@ -144,7 +144,7 @@ class SemaphoreAPIClient:
         url = f"{self.base_url}/api/project/{project_id}/tasks/{task_id}/raw_output"
         response = self.session.request("GET", url)
         response.raise_for_status()
-        
+
         # Return raw text content instead of trying to parse as JSON
         return response.text
 
