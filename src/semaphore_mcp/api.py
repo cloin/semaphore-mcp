@@ -50,10 +50,27 @@ class SemaphoreAPIClient:
         """
         url = f"{self.base_url}/api/{endpoint}"
         response = self.session.request(method, url, **kwargs)
-        response.raise_for_status()
+        
+        try:
+            response.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            # Enhance 404 error messages with more context
+            if response.status_code == 404:
+                raise requests.exceptions.HTTPError(
+                    f"Resource not found (404): {url}. "
+                    f"The requested resource may have been deleted or the ID may be incorrect.",
+                    response=response
+                ) from e
+            raise
 
         if response.content:
-            return response.json()
+            try:
+                return response.json()
+            except json.JSONDecodeError as e:
+                # Handle cases where response is not valid JSON
+                raise ValueError(
+                    f"Invalid JSON response from {url}: {response.text[:200]}..."
+                ) from e
         return {}
 
     # Project endpoints
@@ -122,9 +139,14 @@ class SemaphoreAPIClient:
         result = self._request("GET", f"project/{project_id}/tasks/last")
         return result if isinstance(result, list) else []
 
-    def get_task_raw_output(self, project_id: int, task_id: int) -> Dict[str, Any]:
+    def get_task_raw_output(self, project_id: int, task_id: int) -> str:
         """Get raw task output."""
-        return self._request("GET", f"project/{project_id}/tasks/{task_id}/raw_output")
+        url = f"{self.base_url}/api/project/{project_id}/tasks/{task_id}/raw_output"
+        response = self.session.request("GET", url)
+        response.raise_for_status()
+        
+        # Return raw text content instead of trying to parse as JSON
+        return response.text
 
     def delete_task(self, project_id: int, task_id: int) -> Dict[str, Any]:
         """Delete task and its output."""
