@@ -413,12 +413,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Model Context Protocol**: https://modelcontextprotocol.io/introduction
 - **FastMCP Documentation**: https://github.com/jlowin/fastmcp
 
-## 📞 Support
-
-- **Issues**: Report bugs and request features on [GitHub Issues](https://github.com/cloin/semaphore-mcp/issues)
-- **Discussions**: Join conversations on [GitHub Discussions](https://github.com/cloin/semaphore-mcp/discussions)
-- **SemaphoreUI Community**: Get help with SemaphoreUI at their [community forums](https://github.com/ansible-semaphore/semaphore)
-
 ---
 
 **⭐ If this project helps you, please give it a star on GitHub!**
