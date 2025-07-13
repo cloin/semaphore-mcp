@@ -5,7 +5,6 @@ Script to start the SemaphoreMCP server using FastMCP.
 
 import argparse
 import os
-import sys
 
 from semaphore_mcp.server import start_server
 
