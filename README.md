@@ -101,23 +101,19 @@ The server uses FastMCP for efficient protocol handling and simple tool registra
 - [x] Secure token handling for tests and CI
 - [x] Environment variables configuration
 - [x] Improved error handling in server response formatting
-
-### Working Features
-- ✅ Project operations (list, get, create, update, delete)
-- ✅ Template operations (list, get)
-- ✅ Task operations (list, get, filter by status, execute with monitoring)
-- ✅ Task control operations (stop, bulk stop with confirmation, restart)
-- ✅ Task status polling and streaming updates
-- ✅ Environment management (list, get, create, update, delete)
-- ✅ Inventory management (list, get, create, update, delete)
-- ✅ LLM-based task failure analysis tools
-- ✅ MCP server tools for project management
-- ✅ JSON response formatting with content blocks
+- [x] Project operations (list, get, create, update, delete)
+- [x] Template operations (list, get)
+- [x] Task operations (list, get, filter by status, execute with monitoring)
+- [x] Task control operations (stop, bulk stop with confirmation, restart)
+- [x] Task status polling and streaming updates
+- [x] Environment management (list, get, create, update, delete)
+- [x] Inventory management (list, get, create, update, delete)
+- [x] LLM-based task failure analysis tools
+- [x] MCP server tools for project management
+- [x] JSON response formatting with content blocks
 
 ### To Do
-- [ ] Enhance CI workflow with deeper test coverage
-- [ ] Comprehensive documentation for using the MCP server
-- [ ] Server-Sent Events (SSE) transport implementation
+- [ ] Server-Sent Events (SSE) transport implementation (not sure if there's client support)
 - [ ] Authentication handling improvements
 - [ ] Integration examples with Claude and other AI models
 - [ ] Key operations and run task operations
