@@ -21,7 +21,7 @@ ADMIN_PASSWORD=admin123
 #### Set up PyPI Trusted Publishing
 1. Go to [PyPI Trusted Publishing](https://pypi.org/manage/account/publishing/)
 2. Add a new publisher with these settings:
-   - **Repository name**: `yourusername/semaphore-mcp`
+   - **Repository name**: `cloin/semaphore-mcp`
    - **Workflow filename**: `publish.yml`
    - **Environment name**: `pypi`
 
@@ -30,10 +30,10 @@ ADMIN_PASSWORD=admin123
 Edit `pyproject.toml` and replace the GitHub URLs:
 ```toml
 [project.urls]
-"Homepage" = "https://github.com/YOURUSERNAME/semaphore-mcp"
-"Bug Tracker" = "https://github.com/YOURUSERNAME/semaphore-mcp/issues"
-"Documentation" = "https://github.com/YOURUSERNAME/semaphore-mcp#readme"
-"Source Code" = "https://github.com/YOURUSERNAME/semaphore-mcp"
+"Homepage" = "https://github.com/cloin/semaphore-mcp"
+"Bug Tracker" = "https://github.com/cloin/semaphore-mcp/issues"
+"Documentation" = "https://github.com/cloin/semaphore-mcp#readme"
+"Source Code" = "https://github.com/cloin/semaphore-mcp"
 ```
 
 ### Step 3: Test Build Locally

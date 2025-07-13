@@ -47,10 +47,10 @@ server = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/yourusername/semaphore-mcp"
-"Bug Tracker" = "https://github.com/yourusername/semaphore-mcp/issues"
-"Documentation" = "https://github.com/yourusername/semaphore-mcp#readme"
-"Source Code" = "https://github.com/yourusername/semaphore-mcp"
+"Homepage" = "https://github.com/cloin/semaphore-mcp"
+"Bug Tracker" = "https://github.com/cloin/semaphore-mcp/issues"
+"Documentation" = "https://github.com/cloin/semaphore-mcp#readme"
+"Source Code" = "https://github.com/cloin/semaphore-mcp"
 
 [project.scripts]
 semaphore-mcp = "semaphore_mcp.scripts.start_server:main"
