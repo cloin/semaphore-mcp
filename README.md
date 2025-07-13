@@ -5,6 +5,20 @@ A Model Context Protocol (MCP) server that provides AI assistants with powerful 
 
 ![rawoutput-demo-gif](images/semaphore-mcp-rawoutput.gif)
 
+## Table of Contents
+
+- [What is this?](#what-is-this)
+- [Use Cases](#use-cases)
+- [What You Can Do](#what-you-can-do)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Claude Desktop Integration](#claude-desktop-integration)
+- [Features](#features)
+- [Practical Usage Examples](#practical-usage-examples)
+- [Troubleshooting](#troubleshooting)
+- [Testing](#testing)
+- [Contributing](#contributing)
+
 ## 🎯 What is this?
 
 This MCP server bridges AI assistants (like Claude) with SemaphoreUI, enabling you to:
@@ -33,45 +47,6 @@ Perfect for DevOps teams who want to leverage AI for infrastructure management w
 - **Troubleshooting**: AI-powered analysis of failure logs and suggested remediation
 - **Capacity Planning**: Monitor deployment patterns and resource usage trends
 
-## ⚡ Quick Start
-
-1. **Spin up SemaphoreUI locally:**
-```bash
-docker run -d \
-  --name semaphore-dev \
-  -p 3000:3000 \
-  -e SEMAPHORE_DB_DIALECT=bolt \
-  -e SEMAPHORE_ADMIN_PASSWORD=admin123 \
-  -e SEMAPHORE_ADMIN_NAME=admin \
-  -e SEMAPHORE_ADMIN_EMAIL=admin@localhost \
-  -e SEMAPHORE_ADMIN=admin \
-  -v semaphore-data:/etc/semaphore \
-  semaphoreui/semaphore:latest
-```
-
-2. **Install and configure:** (Requires Python 3.10+)
-```bash
-# Option 1: Install with pipx (recommended - handles PATH automatically)
-pipx install semaphore-mcp
-
-# Option 2: Install with pip (use --user flag to ensure PATH access)
-pip install --user semaphore-mcp
-
-# Note: Avoid using 'sudo pip install' as it may install to a location not in PATH
-
-# Generate API token automatically  
-curl -O https://raw.githubusercontent.com/cloin/semaphore-mcp/main/scripts/generate-token.sh
-chmod +x generate-token.sh
-./generate-token.sh admin admin123
-```
-
-3. **Test the server:**
-```bash
-semaphore-mcp --help
-```
-
-4. **Connect to Claude Desktop** (see [Claude Integration](#claude-desktop-integration) below)
-
 ## 🚀 What You Can Do
 
 Once connected to an AI assistant, you can perform complex automation tasks through natural conversation:
@@ -93,46 +68,43 @@ Once connected to an AI assistant, you can perform complex automation tasks thro
 
 The AI can reason about your infrastructure, suggest solutions, and execute actions all in one conversation.
 
-## 🛠️ Features
+## 📦 Installation
 
-The server uses FastMCP for efficient protocol handling and simple tool registration.
+### Prerequisites
+- Python 3.10+
+- SemaphoreUI instance (local or remote)
+- SemaphoreUI API token
 
-## Project Status
+### Install from PyPI
 
-### Completed
-- [x] Basic project structure setup
-- [x] SemaphoreUI API client implementation
-- [x] MCP server implementation with FastMCP and stdio transport
-- [x] Initial tool definitions for projects, templates, and tasks
-- [x] Basic tests for API client and MCP server
-- [x] GitHub Actions workflow for testing with Docker
-- [x] Secure token handling for tests and CI
-- [x] Environment variables configuration
-- [x] Improved error handling in server response formatting
-- [x] Project operations (list, get, create, update, delete)
-- [x] Template operations (list, get)
-- [x] Task operations (list, get, filter by status, execute with monitoring)
-- [x] Task control operations (stop, bulk stop with confirmation, restart)
-- [x] Task status polling and streaming updates
-- [x] Environment management (list, get, create, update, delete)
-- [x] Inventory management (list, get, create, update, delete)
-- [x] LLM-based task failure analysis tools
-- [x] MCP server tools for project management
-- [x] JSON response formatting with content blocks
+```bash
+# Install with --user flag (recommended for PATH access)
+pip install --user semaphore-mcp
 
-### To Do
-- [ ] Server-Sent Events (SSE) transport implementation (not sure if there's client support)
-- [ ] Authentication handling improvements
-- [ ] Integration examples with Claude and other AI models
-- [ ] Key operations and run task operations
-- [ ] Performance optimization for large Semaphore installations
-- [ ] Implement better error handling and recovery mechanisms
+# Or use pipx (handles PATH automatically)
+pipx install semaphore-mcp
 
-## Testing
+# Verify installation
+semaphore-mcp --help
+```
 
-### Setting up a Test Environment
+**Note**: If `semaphore-mcp` command is not found after installation, you may need to use the full path. Find it with:
+```bash
+# If installed with pipx
+pipx list | grep semaphore-mcp
 
-Spin up a local SemaphoreUI instance using Docker:
+# If installed with pip --user
+python3 -m site --user-base
+```
+
+### Or Install from GitHub
+
+```bash
+# Install latest development version
+pip install --user git+https://github.com/cloin/semaphore-mcp.git
+```
+
+### Optional: Stand up a testing SemaphoreUI instance
 
 ```bash
 docker run -d \
@@ -147,160 +119,17 @@ docker run -d \
   semaphoreui/semaphore:latest
 ```
 
-After starting SemaphoreUI:
+### Generate API Token
 
-1. Access the web UI at http://localhost:3000
-2. Login with username `admin` and password `admin123`
-3. Navigate to User Settings and create an API token
-4. Set up the API token in your `.env` file or generate one using the provided script (semaphore url hardcoded as http://localhost:3000):
-   ```bash
-   # Generate a token with default admin credentials
-   ./scripts/generate-token.sh admin admin123
-   ```
-
-### Running Tests
-
-```bash
-# Run all tests
-pytest
-
-# Run with verbose output
-pytest -v
-
-# Run specific test files
-pytest tests/test_api_client.py
-```
-
-### Test Coverage
-
-The project includes comprehensive tests for all major functionality:
-- Project operations (CRUD)
-- Template operations (list, get)
-- Task operations (CRUD, monitoring, bulk operations, failure analysis)
-- Environment operations (CRUD)
-- Inventory operations (CRUD)
-- Error handling scenarios
-
-## 📦 Installation
-
-### Prerequisites
-- Python 3.10+
-- SemaphoreUI instance (local or remote)
-- SemaphoreUI API token
-
-## 🚀 For Users
-
-### Install from PyPI (Recommended)
-
-```bash
-# Install the package
-pip install semaphore-mcp
-
-# Or with uv (faster)
-uv pip install semaphore-mcp
-
-# Verify installation
-semaphore-mcp --help
-```
-
-### Install from GitHub
-
-```bash
-# Install latest development version
-pip install git+https://github.com/cloin/semaphore-mcp.git
-
-# Or specific version
-pip install git+https://github.com/cloin/semaphore-mcp.git@v0.1.0
-```
-
-## 🛠️ For Developers
-
-### Development Setup
-
-```bash
-# Clone the repository
-git clone https://github.com/cloin/semaphore-mcp.git
-cd semaphore-mcp
-
-# Option 1: Using uv (recommended)
-uv venv && source .venv/bin/activate
-uv pip install -e ".[dev]"
-
-# Option 2: Using pip
-python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-pip install -e ".[dev]"
-
-# Option 3: Using poetry
-poetry install && poetry shell
-```
-
-### Run Tests
-
-```bash
-# Run all tests
-pytest
-
-# Run with coverage
-pytest --cov=src/semaphore_mcp --cov-report=term-missing
-```
+- Login to SemaphoreUI
+- Navigate to User Settings
+- Generate a new API token
 
 ## ⚙️ Configuration
 
-### Environment Variables
-
-Set these in your environment or create a `.env` file:
-
-```bash
-SEMAPHORE_URL=http://localhost:3000
-SEMAPHORE_API_TOKEN=your-token-here
-MCP_LOG_LEVEL=INFO  # Optional, defaults to INFO
-```
-
-To generate a token automatically:
-
-```bash
-./scripts/generate-token.sh admin admin123
-```
-
-### Running the Server
-
-```bash
-# Run the MCP server
-python scripts/start_server.py
-```
-
 ## Claude Desktop Integration
 
-### Step 1: Install and Configure
-
-First, install semaphore-mcp:
-
-```bash
-# Install from PyPI
-pip install semaphore-mcp
-
-# Create a directory for configuration
-mkdir ~/.semaphore-mcp
-cd ~/.semaphore-mcp
-
-# Create .env file with your configuration
-echo "SEMAPHORE_URL=http://localhost:3000" > .env
-echo "SEMAPHORE_API_TOKEN=your-token-here" >> .env
-```
-
-If you need to generate a token and have SemaphoreUI running locally:
-
-```bash
-# Download the token generation script
-curl -O https://raw.githubusercontent.com/cloin/semaphore-mcp/main/scripts/generate-token.sh
-chmod +x generate-token.sh
-
-# Generate token automatically
-./generate-token.sh admin admin123 >> .env
-```
-
-### Step 2: Update Claude Desktop Configuration
+### Step 1: Configure Claude Desktop
 
 Edit your Claude Desktop config file:
 - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
@@ -324,62 +153,21 @@ Add this configuration:
 }
 ```
 
-**Note**: If `semaphore-mcp` is not found, you may need to use the full path. Find it with:
-```bash
-# If installed with pipx
-pipx list | grep semaphore-mcp
+**Note**: If `semaphore-mcp` is not found, use the full path from the installation step above.
 
-# If installed with pip
-which semaphore-mcp || python3 -m site --user-base
-```
+### Step 2: Test and Restart
 
-**Alternative**: If you prefer using a config directory:
-
-```json
-{
-  "mcpServers": {
-    "semaphore": {
-      "command": "bash",
-      "args": [
-        "-c", 
-        "cd ~/.semaphore-mcp && semaphore-mcp"
-      ]
-    }
-  }
-}
-```
-
-### Step 3: Test the Configuration
-
-Verify your setup works before connecting to Claude:
-
-```bash
-# Test the command directly
-SEMAPHORE_URL=http://localhost:3000 SEMAPHORE_API_TOKEN=your-token semaphore-mcp --verbose
-```
-
-You should see output like:
-```
-INFO:semaphore_mcp:Starting SemaphoreMCP server...
-INFO:semaphore_mcp:Connected to SemaphoreUI at http://localhost:3000
-```
-
-Press `Ctrl+C` to stop the test.
-
-### Step 4: Restart Claude Desktop
-
-After updating the configuration file, restart Claude Desktop to apply the changes.
-
-### Step 5: Verify Connection
-
-In Claude Desktop, start a new conversation and try:
+Restart Claude Desktop, then try:
 ```
 List all projects in SemaphoreUI
 ```
 
-If successful, Claude will use the MCP server to fetch and display your projects.
+Or Test your setup:
+```bash
+SEMAPHORE_URL=http://localhost:3000 SEMAPHORE_API_TOKEN=your-token semaphore-mcp --help
+```
 
-### Available MCP Tools
+## 🛠️ Features
 
 The FastMCP server registers the following tools for interacting with SemaphoreUI:
 
@@ -423,19 +211,6 @@ The FastMCP server registers the following tools for interacting with SemaphoreU
 - `create_inventory` - Create a new inventory with content
 - `update_inventory` - Update inventory name and content
 - `delete_inventory` - Delete an inventory item
-
-### Development with FastMCP
-
-Tools are registered using the FastMCP decorator pattern for simplicity and maintainability:
-
-```python
-@mcp.tool()
-def list_projects():
-    # Implementation
-    pass
-```
-
-This approach allows for easy extension with new tools as needed. Check the `server.py` file for implementation details.
 
 ## 📖 Practical Usage Examples
 
@@ -492,6 +267,68 @@ This approach allows for easy extension with new tools as needed. Check the `ser
 2. Use `bulk_stop_tasks` with confirmation prompts
 3. Provide summary of stopped tasks
 4. Suggest investigating why tasks got stuck
+
+## Testing
+
+### Setting up a Test Environment
+
+Spin up a local SemaphoreUI instance using Docker:
+
+```bash
+docker run -d \
+  --name semaphore-dev \
+  -p 3000:3000 \
+  -e SEMAPHORE_DB_DIALECT=bolt \
+  -e SEMAPHORE_ADMIN_PASSWORD=admin123 \
+  -e SEMAPHORE_ADMIN_NAME=admin \
+  -e SEMAPHORE_ADMIN_EMAIL=admin@localhost \
+  -e SEMAPHORE_ADMIN=admin \
+  -v semaphore-data:/etc/semaphore \
+  semaphoreui/semaphore:latest
+```
+
+After starting SemaphoreUI:
+
+1. Access the web UI at http://localhost:3000
+2. Login with username `admin` and password `admin123`
+3. Navigate to User Settings and create an API token
+4. Set up the API token in your MCP client (like Claude Desktop) (semaphore url hardcoded as http://localhost:3000):
+
+### Running Tests
+
+```bash
+# Run all tests
+pytest
+
+# Run with verbose output
+pytest -v
+
+# Run specific test files
+pytest tests/test_api_client.py
+```
+
+### Test Coverage
+
+The project includes comprehensive tests for all major functionality:
+- Project operations (CRUD)
+- Template operations (list, get)
+- Task operations (CRUD, monitoring, bulk operations, failure analysis)
+- Environment operations (CRUD)
+- Inventory operations (CRUD)
+- Error handling scenarios
+
+### Development with FastMCP
+
+Tools are registered using the FastMCP decorator pattern for simplicity and maintainability:
+
+```python
+@mcp.tool()
+def list_projects():
+    # Implementation
+    pass
+```
+
+This approach allows for easy extension with new tools as needed. Check the `server.py` file for implementation details.
 
 ## 🔧 Troubleshooting
 
