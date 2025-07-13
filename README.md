@@ -1,4 +1,5 @@
 # SemaphoreUI MCP Server
+# 🚧 **Under active development!** 🚧
 
 A Model Context Protocol (MCP) server that provides AI assistants with powerful automation capabilities for SemaphoreUI - a modern, web-based Ansible management platform.
 
