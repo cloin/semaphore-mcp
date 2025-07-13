@@ -52,7 +52,7 @@ docker run -d \
 pip install semaphore-mcp
 
 # Generate API token automatically  
-curl -O https://raw.githubusercontent.com/yourusername/semaphore-mcp/main/scripts/generate-token.sh
+curl -O https://raw.githubusercontent.com/cloin/semaphore-mcp/main/scripts/generate-token.sh
 chmod +x generate-token.sh
 ./generate-token.sh admin admin123
 ```
@@ -203,10 +203,10 @@ semaphore-mcp --help
 
 ```bash
 # Install latest development version
-pip install git+https://github.com/yourusername/semaphore-mcp.git
+pip install git+https://github.com/cloin/semaphore-mcp.git
 
 # Or specific version
-pip install git+https://github.com/yourusername/semaphore-mcp.git@v0.1.0
+pip install git+https://github.com/cloin/semaphore-mcp.git@v0.1.0
 ```
 
 ## 🛠️ For Developers
@@ -215,7 +215,7 @@ pip install git+https://github.com/yourusername/semaphore-mcp.git@v0.1.0
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/semaphore-mcp.git
+git clone https://github.com/cloin/semaphore-mcp.git
 cd semaphore-mcp
 
 # Option 1: Using uv (recommended)
@@ -289,7 +289,7 @@ If you need to generate a token and have SemaphoreUI running locally:
 
 ```bash
 # Download the token generation script
-curl -O https://raw.githubusercontent.com/yourusername/semaphore-mcp/main/scripts/generate-token.sh
+curl -O https://raw.githubusercontent.com/cloin/semaphore-mcp/main/scripts/generate-token.sh
 chmod +x generate-token.sh
 
 # Generate token automatically
@@ -530,7 +530,7 @@ We welcome contributions! Here's how to get started:
 
 ```bash
 # Clone your fork
-git clone https://github.com/yourusername/semaphore-mcp.git
+git clone https://github.com/cloin/semaphore-mcp.git
 cd semaphore-mcp
 
 # Install in development mode
@@ -558,8 +558,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-- **Issues**: Report bugs and request features on [GitHub Issues](https://github.com/yourusername/semaphore-mcp/issues)
-- **Discussions**: Join conversations on [GitHub Discussions](https://github.com/yourusername/semaphore-mcp/discussions)
+- **Issues**: Report bugs and request features on [GitHub Issues](https://github.com/cloin/semaphore-mcp/issues)
+- **Discussions**: Join conversations on [GitHub Discussions](https://github.com/cloin/semaphore-mcp/discussions)
 - **SemaphoreUI Community**: Get help with SemaphoreUI at their [community forums](https://github.com/ansible-semaphore/semaphore)
 
 ---
