@@ -547,12 +547,19 @@ cd semaphore-mcp
 uv venv && source .venv/bin/activate
 uv pip install -e ".[dev]"
 
+# Install pre-commit hooks
+pre-commit install
+
 # Run tests
 pytest
 
-# Run linting
+# Run linting manually
 black src/ tests/
 isort src/ tests/
+flake8 src/ tests/
+
+# Or run all linters at once with pre-commit
+pre-commit run --all-files
 ```
 
 ## 📜 License
