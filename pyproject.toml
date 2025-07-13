@@ -10,7 +10,7 @@ authors = [
 ]
 description = "Model Context Protocol (MCP) server for SemaphoreUI automation"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = {text = "MIT"}
 keywords = ["mcp", "model-context-protocol", "semaphore", "ansible", "automation", "devops"]
 classifiers = [
@@ -20,7 +20,6 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",

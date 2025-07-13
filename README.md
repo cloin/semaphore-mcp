@@ -46,20 +46,20 @@ docker run -d \
   semaphoreui/semaphore:latest
 ```
 
-2. **Install and configure:**
+2. **Install and configure:** (Requires Python 3.10+)
 ```bash
-git clone https://github.com/yourusername/semaphore-mcp.git
-cd semaphore-mcp
-uv venv && source .venv/bin/activate
-uv pip install -e .
+# Install the package
+pip install semaphore-mcp
 
-# Generate API token automatically
-./scripts/generate-token.sh admin admin123
+# Generate API token automatically  
+curl -O https://raw.githubusercontent.com/yourusername/semaphore-mcp/main/scripts/generate-token.sh
+chmod +x generate-token.sh
+./generate-token.sh admin admin123
 ```
 
 3. **Test the server:**
 ```bash
-python scripts/start_server.py
+semaphore-mcp --help
 ```
 
 4. **Connect to Claude Desktop** (see [Claude Integration](#claude-desktop-integration) below)
@@ -180,57 +180,72 @@ The project includes comprehensive tests for all major functionality:
 ## 📦 Installation
 
 ### Prerequisites
-- Python 3.9+
+- Python 3.10+
 - SemaphoreUI instance (local or remote)
 - SemaphoreUI API token
 
-### Option 1: Install from PyPI (Recommended)
+## 🚀 For Users
+
+### Install from PyPI (Recommended)
 
 ```bash
-# Install the package directly from PyPI
+# Install the package
 pip install semaphore-mcp
 
 # Or with uv (faster)
 uv pip install semaphore-mcp
 
-# Start the server
+# Verify installation
 semaphore-mcp --help
 ```
 
-### Option 2: Install from GitHub
+### Install from GitHub
 
 ```bash
 # Install latest development version
 pip install git+https://github.com/yourusername/semaphore-mcp.git
 
-# Or with specific branch/tag
-pip install git+https://github.com/yourusername/semaphore-mcp.git@main
+# Or specific version
+pip install git+https://github.com/yourusername/semaphore-mcp.git@v0.1.0
 ```
 
-### Option 3: Development Installation
+## 🛠️ For Developers
+
+### Development Setup
 
 ```bash
-# Clone the repository for development
+# Clone the repository
 git clone https://github.com/yourusername/semaphore-mcp.git
 cd semaphore-mcp
 
-# Using uv (recommended)
+# Option 1: Using uv (recommended)
 uv venv && source .venv/bin/activate
 uv pip install -e ".[dev]"
 
-# Or using pip
+# Option 2: Using pip
 python -m venv .venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 pip install -e ".[dev]"
 
-# Or using poetry
-poetry install
-poetry shell
+# Option 3: Using poetry
+poetry install && poetry shell
 ```
 
-### Configuration
+### Run Tests
 
-Create a `.env` file in the project root or set environment variables:
+```bash
+# Run all tests
+pytest
+
+# Run with coverage
+pytest --cov=src/semaphore_mcp --cov-report=term-missing
+```
+
+## ⚙️ Configuration
+
+### Environment Variables
+
+Set these in your environment or create a `.env` file:
 
 ```bash
 SEMAPHORE_URL=http://localhost:3000
