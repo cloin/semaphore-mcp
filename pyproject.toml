@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "semaphore-mcp"
-version = "0.1.0"
+version = "0.1.1"
 authors = [
     {name = "Colin McNaughton"},
 ]
@@ -40,6 +40,10 @@ dev = [
     "pytest-asyncio>=0.21.1", 
     "black>=23.0.0",
     "isort>=5.12.0",
+    "flake8>=7.0.0",
+    "mypy>=1.8.0",
+    "types-requests>=2.31.0",
+    "pre-commit>=3.5.0",
 ]
 server = [
     "fastapi>=0.104.0",
