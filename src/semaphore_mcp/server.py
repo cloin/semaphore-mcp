@@ -87,8 +87,6 @@ class SemaphoreMCPServer:
         # self.mcp.tool()(self.task_tools.restart_task)
         # self.mcp.tool()(self.task_tools.bulk_restart_tasks)
 
-        # Environment and inventory tools - now fully working!
-
         # Environment tools
         self.mcp.tool()(self.environment_tools.list_environments)
         self.mcp.tool()(self.environment_tools.get_environment)
