@@ -184,41 +184,46 @@ The project includes comprehensive tests for all major functionality:
 - SemaphoreUI instance (local or remote)
 - SemaphoreUI API token
 
-### Option 1: Using uv (Recommended)
+### Option 1: Install from PyPI (Recommended)
 
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/semaphore-mcp.git
-cd semaphore-mcp
+# Install the package directly from PyPI
+pip install semaphore-mcp
 
-# Install uv if you don't have it
-curl -LsSf https://astral.sh/uv/install.sh | sh
+# Or with uv (faster)
+uv pip install semaphore-mcp
 
-# Create virtual environment and install
-uv venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-uv pip install -e .
+# Start the server
+semaphore-mcp --help
 ```
 
-### Option 2: Using pip
+### Option 2: Install from GitHub
 
 ```bash
-# Clone and set up with standard pip
+# Install latest development version
+pip install git+https://github.com/yourusername/semaphore-mcp.git
+
+# Or with specific branch/tag
+pip install git+https://github.com/yourusername/semaphore-mcp.git@main
+```
+
+### Option 3: Development Installation
+
+```bash
+# Clone the repository for development
 git clone https://github.com/yourusername/semaphore-mcp.git
 cd semaphore-mcp
 
+# Using uv (recommended)
+uv venv && source .venv/bin/activate
+uv pip install -e ".[dev]"
+
+# Or using pip
 python -m venv .venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-pip install -e .
-```
+pip install -e ".[dev]"
 
-### Option 3: Using poetry
-
-```bash
-# If you prefer poetry
-git clone https://github.com/yourusername/semaphore-mcp.git
-cd semaphore-mcp
-
+# Or using poetry
 poetry install
 poetry shell
 ```
@@ -248,20 +253,32 @@ python scripts/start_server.py
 
 ## Claude Desktop Integration
 
-### Step 1: Configure the MCP Server
+### Step 1: Install and Configure
 
-First, ensure your semaphore-mcp is properly set up:
+First, install semaphore-mcp:
 
 ```bash
-# Navigate to your project directory
-cd /path/to/semaphore-mcp
+# Install from PyPI
+pip install semaphore-mcp
+
+# Create a directory for configuration
+mkdir ~/.semaphore-mcp
+cd ~/.semaphore-mcp
 
 # Create .env file with your configuration
 echo "SEMAPHORE_URL=http://localhost:3000" > .env
 echo "SEMAPHORE_API_TOKEN=your-token-here" >> .env
+```
 
-# Or generate token automatically
-./scripts/generate-token.sh admin admin123 >> .env
+If you need to generate a token and have SemaphoreUI running locally:
+
+```bash
+# Download the token generation script
+curl -O https://raw.githubusercontent.com/yourusername/semaphore-mcp/main/scripts/generate-token.sh
+chmod +x generate-token.sh
+
+# Generate token automatically
+./generate-token.sh admin admin123 >> .env
 ```
 
 ### Step 2: Update Claude Desktop Configuration
@@ -277,13 +294,10 @@ Add this configuration:
 {
   "mcpServers": {
     "semaphore": {
-      "command": "bash",
-      "args": [
-        "-c",
-        "cd /absolute/path/to/semaphore-mcp && source .venv/bin/activate && python scripts/start_server.py"
-      ],
+      "command": "semaphore-mcp",
+      "args": [],
       "env": {
-        "SEMAPHORE_URL": "http://localhost:3000",
+        "SEMAPHORE_URL": "http://localhost:3000", 
         "SEMAPHORE_API_TOKEN": "your-token-here"
       }
     }
@@ -291,15 +305,29 @@ Add this configuration:
 }
 ```
 
-**Important**: Replace `/absolute/path/to/semaphore-mcp` with the full path to your semaphore-mcp directory.
+**Alternative**: If you prefer using a config directory:
+
+```json
+{
+  "mcpServers": {
+    "semaphore": {
+      "command": "bash",
+      "args": [
+        "-c", 
+        "cd ~/.semaphore-mcp && semaphore-mcp"
+      ]
+    }
+  }
+}
+```
 
 ### Step 3: Test the Configuration
 
 Verify your setup works before connecting to Claude:
 
 ```bash
-# Test the exact command Claude Desktop will run
-bash -c "cd /absolute/path/to/semaphore-mcp && source .venv/bin/activate && python scripts/start_server.py"
+# Test the command directly
+SEMAPHORE_URL=http://localhost:3000 SEMAPHORE_API_TOKEN=your-token semaphore-mcp --verbose
 ```
 
 You should see output like:

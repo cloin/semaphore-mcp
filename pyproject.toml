@@ -6,20 +6,55 @@ build-backend = "setuptools.build_meta"
 name = "semaphore-mcp"
 version = "0.1.0"
 authors = [
-    {name = "SemaphoreMCP Team"},
+    {name = "SemaphoreMCP Team", email = "team@example.com"},
 ]
-description = "Model Context Protocol (MCP) for SemaphoreUI"
+description = "Model Context Protocol (MCP) server for SemaphoreUI automation"
 readme = "README.md"
 requires-python = ">=3.9"
+license = {text = "MIT"}
+keywords = ["mcp", "model-context-protocol", "semaphore", "ansible", "automation", "devops"]
 classifiers = [
-    "Programming Language :: Python :: 3",
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators", 
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Systems Administration",
+]
+dependencies = [
+    "requests>=2.31.0",
+    "pydantic>=2.5.0",
+    "python-dotenv>=1.0.0",
+    "mcp>=1.9.3",
+    "aiohttp>=3.8.5",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.1", 
+    "black>=23.0.0",
+    "isort>=5.12.0",
+]
+server = [
+    "fastapi>=0.104.0",
+    "uvicorn>=0.23.2",
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/username/semaphore-mcp"
-"Bug Tracker" = "https://github.com/username/semaphore-mcp/issues"
+"Homepage" = "https://github.com/yourusername/semaphore-mcp"
+"Bug Tracker" = "https://github.com/yourusername/semaphore-mcp/issues"
+"Documentation" = "https://github.com/yourusername/semaphore-mcp#readme"
+"Source Code" = "https://github.com/yourusername/semaphore-mcp"
+
+[project.scripts]
+semaphore-mcp = "semaphore_mcp.scripts.start_server:main"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
