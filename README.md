@@ -19,7 +19,7 @@ A Model Context Protocol (MCP) server that provides AI assistants with powerful 
 - [Testing](#testing)
 - [Contributing](#contributing)
 
-## 🎯 What is this?
+## What is this?
 
 This MCP server bridges AI assistants (like Claude) with SemaphoreUI, enabling you to:
 
@@ -30,7 +30,7 @@ This MCP server bridges AI assistants (like Claude) with SemaphoreUI, enabling y
 
 Perfect for DevOps teams who want to leverage AI for infrastructure management while maintaining the power and flexibility of Ansible.
 
-## 🎯 Use Cases
+## Use Cases
 
 ### For DevOps Engineers
 - **Incident Response**: "Find all failed deployments in the last 6 hours and analyze the errors"
@@ -47,7 +47,7 @@ Perfect for DevOps teams who want to leverage AI for infrastructure management w
 - **Troubleshooting**: AI-powered analysis of failure logs and suggested remediation
 - **Capacity Planning**: Monitor deployment patterns and resource usage trends
 
-## 🚀 What You Can Do
+## What You Can Do
 
 Once connected to an AI assistant, you can perform complex automation tasks through natural conversation:
 
@@ -68,7 +68,7 @@ Once connected to an AI assistant, you can perform complex automation tasks thro
 
 The AI can reason about your infrastructure, suggest solutions, and execute actions all in one conversation.
 
-## 📦 Installation
+## Installation
 
 ### Prerequisites
 - Python 3.10+
@@ -125,7 +125,7 @@ docker run -d \
 - Navigate to User Settings
 - Generate a new API token
 
-## ⚙️ Configuration
+## Configuration
 
 ## Claude Desktop Integration
 
@@ -167,7 +167,7 @@ Or Test your setup:
 SEMAPHORE_URL=http://localhost:3000 SEMAPHORE_API_TOKEN=your-token semaphore-mcp --help
 ```
 
-## 🛠️ Features
+## Features
 
 The FastMCP server registers the following tools for interacting with SemaphoreUI:
 
@@ -212,7 +212,7 @@ The FastMCP server registers the following tools for interacting with SemaphoreU
 - `update_inventory` - Update inventory name and content
 - `delete_inventory` - Delete an inventory item
 
-## 📖 Practical Usage Examples
+## Practical Usage Examples
 
 ### Example 1: Setting Up a New Project
 
@@ -330,7 +330,7 @@ def list_projects():
 
 This approach allows for easy extension with new tools as needed. Check the `server.py` file for implementation details.
 
-## 🔧 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
@@ -364,7 +364,7 @@ export MCP_LOG_LEVEL=DEBUG
 
 This will provide verbose output about MCP communications and API calls.
 
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions! Here's how to get started:
 
@@ -402,11 +402,11 @@ flake8 src/ tests/
 pre-commit run --all-files
 ```
 
-## 📜 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🔗 Related Resources
+## Related Resources
 
 - **SemaphoreUI Documentation**: https://docs.semaphoreui.com/
 - **SemaphoreUI API Reference**: https://semaphoreui.com/api-docs/
