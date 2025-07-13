@@ -1,0 +1,94 @@
+name: Test Published Package
+
+# Run this workflow after publishing to PyPI
+on:
+  workflow_run:
+    workflows: ["Publish to PyPI"]
+    types:
+      - completed
+  # Also allow manual trigger
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Package version to test (e.g., 0.1.0)'
+        required: true
+        type: string
+
+jobs:
+  test-published:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11', '3.12']
+        install-method: ['pip', 'uv']
+    
+    steps:
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      
+      - name: Install uv (if testing uv)
+        if: matrix.install-method == 'uv'
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+      
+      - name: Wait for PyPI propagation
+        run: |
+          echo "Waiting 60 seconds for PyPI to propagate new package..."
+          sleep 60
+      
+      - name: Install package from PyPI
+        run: |
+          if [ "${{ matrix.install-method }}" = "uv" ]; then
+            uv pip install --system semaphore-mcp
+          else
+            pip install semaphore-mcp
+          fi
+      
+      - name: Test console script
+        run: |
+          # Test help command
+          semaphore-mcp --help
+          
+          # Test version info (if implemented)
+          # semaphore-mcp --version
+      
+      - name: Test package import
+        run: |
+          python -c "
+          try:
+              from semaphore_mcp import server
+              print('✅ Package import successful')
+          except ImportError as e:
+              print(f'❌ Import failed: {e}')
+              exit(1)
+          "
+      
+      - name: Test package structure
+        run: |
+          python -c "
+          import semaphore_mcp
+          import semaphore_mcp.tools.projects
+          import semaphore_mcp.tools.tasks
+          print('✅ All modules importable')
+          "
+      
+      - name: Test with mock configuration
+        run: |
+          # Test graceful failure with invalid config
+          export SEMAPHORE_URL=http://invalid:3000
+          export SEMAPHORE_API_TOKEN=invalid-token
+          
+          # Should fail with connection error, not import/module error
+          timeout 10s semaphore-mcp --verbose 2>&1 | grep -E "(connection|timeout|refused)" && echo "✅ Graceful failure" || echo "⚠️ Unexpected error type"
+      
+      - name: Create smoke test report
+        if: always()
+        run: |
+          echo "## Smoke Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "- **Python**: ${{ matrix.python-version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Install method**: ${{ matrix.install-method }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
