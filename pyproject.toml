@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "semaphore-mcp"
 version = "0.1.0"
 authors = [
-    {name = "SemaphoreMCP Team", email = "team@example.com"},
+    {name = "Colin McNaughton"},
 ]
 description = "Model Context Protocol (MCP) server for SemaphoreUI automation"
 readme = "README.md"
