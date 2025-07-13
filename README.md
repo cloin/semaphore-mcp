@@ -48,8 +48,13 @@ docker run -d \
 
 2. **Install and configure:** (Requires Python 3.10+)
 ```bash
-# Install the package
-pip install semaphore-mcp
+# Option 1: Install with pipx (recommended - handles PATH automatically)
+pipx install semaphore-mcp
+
+# Option 2: Install with pip (use --user flag to ensure PATH access)
+pip install --user semaphore-mcp
+
+# Note: Avoid using 'sudo pip install' as it may install to a location not in PATH
 
 # Generate API token automatically  
 curl -O https://raw.githubusercontent.com/cloin/semaphore-mcp/main/scripts/generate-token.sh
@@ -314,6 +319,15 @@ Add this configuration:
     }
   }
 }
+```
+
+**Note**: If `semaphore-mcp` is not found, you may need to use the full path. Find it with:
+```bash
+# If installed with pipx
+pipx list | grep semaphore-mcp
+
+# If installed with pip
+which semaphore-mcp || python3 -m site --user-base
 ```
 
 **Alternative**: If you prefer using a config directory:
