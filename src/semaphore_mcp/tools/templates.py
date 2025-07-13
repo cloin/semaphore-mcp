@@ -25,7 +25,8 @@ class TemplateTools(BaseTool):
             A list of templates for the project
         """
         try:
-            return self.semaphore.list_templates(project_id)
+            templates = self.semaphore.list_templates(project_id)
+            return {"templates": templates}
         except Exception as e:
             self.handle_error(e, f"listing templates for project {project_id}")
 
@@ -42,4 +43,28 @@ class TemplateTools(BaseTool):
         try:
             return self.semaphore.get_template(project_id, template_id)
         except Exception as e:
+            # If individual template fetch fails, try to find it in the template list
+            if "404" in str(e):
+                try:
+                    templates = self.semaphore.list_templates(project_id)
+                    if isinstance(templates, list):
+                        matching_template = next(
+                            (
+                                template
+                                for template in templates
+                                if template.get("id") == template_id
+                            ),
+                            None,
+                        )
+                        if matching_template:
+                            return {
+                                "template": matching_template,
+                                "note": "Template found in list but individual endpoint unavailable",
+                            }
+                    self.handle_error(
+                        e,
+                        f"getting template {template_id}. Template may have been deleted or ID format may be incorrect",
+                    )
+                except Exception:
+                    pass
             self.handle_error(e, f"getting template {template_id}")

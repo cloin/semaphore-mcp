@@ -32,7 +32,8 @@ class EnvironmentTools(BaseTool):
             A list of environments for the project
         """
         try:
-            return self.semaphore.list_environments(project_id)
+            environments = self.semaphore.list_environments(project_id)
+            return {"environments": environments}
         except Exception as e:
             self.handle_error(e, f"listing environments for project {project_id}")
 
@@ -127,7 +128,8 @@ class EnvironmentTools(BaseTool):
             A list of inventory items for the project
         """
         try:
-            return self.semaphore.list_inventory(project_id)
+            inventory = self.semaphore.list_inventory(project_id)
+            return {"inventory": inventory}
         except Exception as e:
             self.handle_error(e, f"listing inventory for project {project_id}")
 
