@@ -75,8 +75,7 @@ class SemaphoreMCPServer:
         self.mcp.tool()(self.task_tools.bulk_stop_tasks)
         self.mcp.tool()(self.task_tools.get_waiting_tasks)
 
-        # Advanced task execution with monitoring
-        self.mcp.tool()(self.task_tools.run_task_with_monitoring)
+
 
         # LLM-based failure analysis tools
         self.mcp.tool()(self.task_tools.get_task_raw_output)

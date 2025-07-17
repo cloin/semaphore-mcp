@@ -3,7 +3,7 @@ Additional tests for TaskTools to improve coverage.
 These tests focus on code paths not covered by existing tests.
 """
 
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, Mock
 
 import pytest
 import pytest_asyncio
@@ -77,7 +77,7 @@ class TestTaskToolsCoverage:
 
         result = await task_tools.run_task(5)  # No project_id provided
 
-        assert result["id"] == 10
+        assert result["task"]["id"] == 10
         # Verify it found the project and ran the task
         task_tools.semaphore.run_task.assert_called_once_with(1, 5, environment=None)
 
@@ -93,7 +93,7 @@ class TestTaskToolsCoverage:
 
         result = await task_tools.run_task(5)
 
-        assert result["id"] == 10
+        assert result["task"]["id"] == 10
         task_tools.semaphore.run_task.assert_called_once_with(1, 5, environment=None)
 
     @pytest.mark.asyncio
@@ -344,42 +344,43 @@ class TestTaskToolsCoverage:
         assert result["waiting_tasks"] == []
 
     @pytest.mark.asyncio
-    async def test_run_task_with_monitoring_no_follow(self, task_tools):
-        """Test run_task_with_monitoring when follow=False."""
+    async def test_run_task_no_follow(self, task_tools):
+        """Test run_task when follow=False."""
         mock_task_result = {"id": 10, "status": "started"}
 
-        # Mock the run_task call
-        task_tools.run_task = AsyncMock(return_value=mock_task_result)
+        # Mock the semaphore client
+        task_tools.semaphore.run_task = Mock(return_value=mock_task_result)
 
-        result = await task_tools.run_task_with_monitoring(5, follow=False)
+        result = await task_tools.run_task(5, project_id=1, follow=False)
 
-        assert result == mock_task_result
-        # Verify monitoring was not started
-        task_tools.run_task.assert_called_once_with(5, None, None)
+        assert "task" in result
+        assert "monitoring" in result
+        assert result["monitoring"]["enabled"] is False
+        # Verify semaphore client was called
+        task_tools.semaphore.run_task.assert_called_once_with(1, 5, environment=None)
 
     @pytest.mark.asyncio
-    async def test_run_task_with_monitoring_no_task_id(self, task_tools):
-        """Test run_task_with_monitoring when task result has no ID."""
+    async def test_run_task_no_task_id(self, task_tools):
+        """Test run_task when task result has no ID."""
         mock_task_result = {"status": "started"}  # No ID
 
-        task_tools.run_task = AsyncMock(return_value=mock_task_result)
+        task_tools.semaphore.run_task = Mock(return_value=mock_task_result)
 
-        result = await task_tools.run_task_with_monitoring(5, follow=True)
+        result = await task_tools.run_task(5, project_id=1, follow=True)
 
         assert "error" in result
         assert "Could not extract task ID" in result["error"]
 
     @pytest.mark.asyncio
-    async def test_run_task_with_monitoring_no_project_id(self, task_tools):
-        """Test run_task_with_monitoring when project_id can't be determined."""
-        mock_task_result = {"id": 10}  # No project_id
+    async def test_run_task_project_id_detection_failure(self, task_tools):
+        """Test run_task when project_id can't be auto-detected."""
+        # Mock empty projects list
+        task_tools.semaphore.list_projects = Mock(return_value=[])
 
-        task_tools.run_task = AsyncMock(return_value=mock_task_result)
-
-        result = await task_tools.run_task_with_monitoring(5, follow=True)
+        result = await task_tools.run_task(5, project_id=None, follow=False)
 
         assert "error" in result
-        assert "Could not determine project ID" in result["error"]
+        assert "Could not determine project_id" in result["error"]
 
     @pytest.mark.asyncio
     async def test_analyze_task_failure_non_failed_task(self, task_tools):
