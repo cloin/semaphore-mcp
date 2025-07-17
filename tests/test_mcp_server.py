@@ -100,15 +100,16 @@ class TestMCPServer:
             if not projects or (isinstance(projects, list) and not projects):
                 pytest.skip("No projects available for task tests")
 
-            project_id = (
-                projects[0]["id"]
-                if isinstance(projects, list)
-                else (
-                    projects.get("projects", [])[0]["id"]
-                    if "projects" in projects
-                    else None
-                )
-            )
+            project_id = None
+            if isinstance(projects, list):
+                if projects:  # Ensure list is not empty
+                    project_id = projects[0]["id"]
+            else:
+                # Handle dict response
+                projects_list = projects.get("projects", [])
+                if projects_list:  # Ensure list is not empty
+                    project_id = projects_list[0]["id"]
+            
             if not project_id:
                 pytest.skip("Could not determine project ID")
 
@@ -147,15 +148,16 @@ class TestMCPServer:
             if not projects or (isinstance(projects, list) and not projects):
                 pytest.skip("No projects available for task tests")
 
-            project_id = (
-                projects[0]["id"]
-                if isinstance(projects, list)
-                else (
-                    projects.get("projects", [])[0]["id"]
-                    if "projects" in projects
-                    else None
-                )
-            )
+            project_id = None
+            if isinstance(projects, list):
+                if projects:  # Ensure list is not empty
+                    project_id = projects[0]["id"]
+            else:
+                # Handle dict response
+                projects_list = projects.get("projects", [])
+                if projects_list:  # Ensure list is not empty
+                    project_id = projects_list[0]["id"]
+            
             if not project_id:
                 pytest.skip("Could not determine project ID")
 
@@ -184,15 +186,16 @@ class TestMCPServer:
             if not projects or (isinstance(projects, list) and not projects):
                 pytest.skip("No projects available for task tests")
 
-            project_id = (
-                projects[0]["id"]
-                if isinstance(projects, list)
-                else (
-                    projects.get("projects", [])[0]["id"]
-                    if "projects" in projects
-                    else None
-                )
-            )
+            project_id = None
+            if isinstance(projects, list):
+                if projects:  # Ensure list is not empty
+                    project_id = projects[0]["id"]
+            else:
+                # Handle dict response
+                projects_list = projects.get("projects", [])
+                if projects_list:  # Ensure list is not empty
+                    project_id = projects_list[0]["id"]
+            
             if not project_id:
                 pytest.skip("Could not determine project ID")
 
