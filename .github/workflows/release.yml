@@ -1,0 +1,148 @@
+name: Create Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 0.1.6, 1.0.0)'
+        required: true
+        type: string
+      release_type:
+        description: 'Type of release'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+          - custom
+      prerelease:
+        description: 'Mark as pre-release'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Required to create releases and push tags
+      pull-requests: write  # Required to create PRs if needed
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install toml
+
+      - name: Validate version format
+        run: |
+          if [[ ! "${{ inputs.version }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Error: Version must be in semver format (e.g., 1.0.0)"
+            exit 1
+          fi
+
+      - name: Check if version already exists
+        run: |
+          if git tag --list | grep -q "^v${{ inputs.version }}$"; then
+            echo "Error: Version v${{ inputs.version }} already exists"
+            exit 1
+          fi
+
+      - name: Update version in pyproject.toml
+        run: |
+          python -c "
+          import toml
+          
+          # Read current pyproject.toml
+          with open('pyproject.toml', 'r') as f:
+              data = toml.load(f)
+          
+          # Update version
+          current_version = data['project']['version']
+          new_version = '${{ inputs.version }}'
+          data['project']['version'] = new_version
+          
+          # Write back to file
+          with open('pyproject.toml', 'w') as f:
+              toml.dump(data, f)
+          
+          print(f'Updated version from {current_version} to {new_version}')
+          "
+
+      - name: Generate changelog entry
+        id: changelog
+        run: |
+          # Get commits since last tag
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -z "$LAST_TAG" ]; then
+            COMMITS=$(git log --oneline --pretty=format:"- %s" HEAD)
+          else
+            COMMITS=$(git log --oneline --pretty=format:"- %s" ${LAST_TAG}..HEAD)
+          fi
+          
+          # Create release notes
+          cat > release_notes.md << EOF
+          ## What's Changed
+          
+          ${COMMITS}
+          
+          **Full Changelog**: https://github.com/${{ github.repository }}/compare/${LAST_TAG}...v${{ inputs.version }}
+          EOF
+          
+          # Store for later use
+          echo "release_notes<<EOF" >> $GITHUB_OUTPUT
+          cat release_notes.md >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Commit version change
+        run: |
+          git add pyproject.toml
+          git commit -m "Bump version to ${{ inputs.version }}"
+
+      - name: Create and push tag
+        run: |
+          git tag -a "v${{ inputs.version }}" -m "Release v${{ inputs.version }}"
+          git push origin "v${{ inputs.version }}"
+
+      - name: Push version commit
+        run: |
+          git push origin main
+
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PRERELEASE_FLAG=""
+          if [ "${{ inputs.prerelease }}" = "true" ]; then
+            PRERELEASE_FLAG="--prerelease"
+          fi
+          
+          gh release create "v${{ inputs.version }}" \
+            --title "Release v${{ inputs.version }}" \
+            --notes-file release_notes.md \
+            $PRERELEASE_FLAG
+
+      - name: Wait for publish workflow
+        run: |
+          echo "✅ Release v${{ inputs.version }} created successfully!"
+          echo "🚀 The publish workflow will automatically trigger and deploy to PyPI"
+          echo "📦 Monitor the 'Publish to PyPI' workflow in the Actions tab"
+          echo "🔗 Release: https://github.com/${{ github.repository }}/releases/tag/v${{ inputs.version }}" 
