@@ -245,7 +245,7 @@ The FastMCP server registers the following tools for interacting with SemaphoreU
 2. Stream real-time progress updates
 3. Notify you of completion status
 4. If it fails, automatically analyze the failure
-
+ove to 
 ### Example 4: Infrastructure Inventory Management
 
 **You say to Claude:**
@@ -393,10 +393,12 @@ pre-commit install
 # Run tests
 pytest
 
-# Run linting manually
-black src/ tests/
-isort src/ tests/
-flake8 src/ tests/
+# Run linting and formatting with ruff
+ruff check src/ tests/  # Linting
+ruff format src/ tests/ # Formatting
+
+# Or run both together
+ruff check --fix src/ tests/ && ruff format src/ tests/
 
 # Or run all linters at once with pre-commit
 pre-commit run --all-files

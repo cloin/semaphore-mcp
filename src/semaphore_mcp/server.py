@@ -75,8 +75,6 @@ class SemaphoreMCPServer:
         self.mcp.tool()(self.task_tools.bulk_stop_tasks)
         self.mcp.tool()(self.task_tools.get_waiting_tasks)
 
-
-
         # LLM-based failure analysis tools
         self.mcp.tool()(self.task_tools.get_task_raw_output)
         self.mcp.tool()(self.task_tools.analyze_task_failure)

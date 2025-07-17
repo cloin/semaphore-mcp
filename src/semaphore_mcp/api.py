@@ -6,7 +6,7 @@ This module provides a client for interacting with SemaphoreUI's API.
 
 import json
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 import requests
 
@@ -33,7 +33,7 @@ class SemaphoreAPIClient:
             {"Content-Type": "application/json", "Accept": "application/json"}
         )
 
-    def _request(self, method: str, endpoint: str, **kwargs) -> Dict[str, Any]:
+    def _request(self, method: str, endpoint: str, **kwargs) -> dict[str, Any]:
         """
         Make an HTTP request to the SemaphoreUI API.
 
@@ -74,32 +74,32 @@ class SemaphoreAPIClient:
         return {}
 
     # Project endpoints
-    def list_projects(self) -> List[Dict[str, Any]]:
+    def list_projects(self) -> list[dict[str, Any]]:
         """List all projects."""
         result = self._request("GET", "projects")
         return result if isinstance(result, list) else []
 
-    def get_project(self, project_id: int) -> Dict[str, Any]:
+    def get_project(self, project_id: int) -> dict[str, Any]:
         """Get a project by ID."""
         return self._request("GET", f"project/{project_id}")
 
     # Template endpoints
-    def list_templates(self, project_id: int) -> List[Dict[str, Any]]:
+    def list_templates(self, project_id: int) -> list[dict[str, Any]]:
         """List all templates for a project."""
         result = self._request("GET", f"project/{project_id}/templates")
         return result if isinstance(result, list) else []
 
-    def get_template(self, project_id: int, template_id: int) -> Dict[str, Any]:
+    def get_template(self, project_id: int, template_id: int) -> dict[str, Any]:
         """Get a template by ID."""
         return self._request("GET", f"project/{project_id}/template/{template_id}")
 
     # Task endpoints
-    def list_tasks(self, project_id: int) -> List[Dict[str, Any]]:
+    def list_tasks(self, project_id: int) -> list[dict[str, Any]]:
         """List all tasks for a project."""
         result = self._request("GET", f"project/{project_id}/tasks")
         return result if isinstance(result, list) else []
 
-    def get_task(self, project_id: int, task_id: int) -> Dict[str, Any]:
+    def get_task(self, project_id: int, task_id: int) -> dict[str, Any]:
         """Get a task by ID."""
         return self._request("GET", f"project/{project_id}/task/{task_id}")
 
@@ -107,8 +107,8 @@ class SemaphoreAPIClient:
         self,
         project_id: int,
         template_id: int,
-        environment: Optional[Dict[str, str]] = None,
-    ) -> Dict[str, Any]:
+        environment: Optional[dict[str, str]] = None,
+    ) -> dict[str, Any]:
         """
         Run a task using a template.
 
@@ -120,21 +120,21 @@ class SemaphoreAPIClient:
         Returns:
             Task information
         """
-        payload: Dict[str, Any] = {"template_id": template_id}
+        payload: dict[str, Any] = {"template_id": template_id}
         if environment:
             payload["environment"] = environment
 
         return self._request("POST", f"project/{project_id}/tasks", json=payload)
 
-    def get_task_output(self, project_id: int, task_id: int) -> Dict[str, Any]:
+    def get_task_output(self, project_id: int, task_id: int) -> dict[str, Any]:
         """Get the output of a task."""
         return self._request("GET", f"project/{project_id}/task/{task_id}/output")
 
-    def stop_task(self, project_id: int, task_id: int) -> Dict[str, Any]:
+    def stop_task(self, project_id: int, task_id: int) -> dict[str, Any]:
         """Stop a running task."""
         return self._request("POST", f"project/{project_id}/tasks/{task_id}/stop")
 
-    def get_last_tasks(self, project_id: int) -> List[Dict[str, Any]]:
+    def get_last_tasks(self, project_id: int) -> list[dict[str, Any]]:
         """Get last 200 tasks for a project (more efficient than full list)."""
         result = self._request("GET", f"project/{project_id}/tasks/last")
         return result if isinstance(result, list) else []
@@ -148,31 +148,31 @@ class SemaphoreAPIClient:
         # Return raw text content instead of trying to parse as JSON
         return response.text
 
-    def delete_task(self, project_id: int, task_id: int) -> Dict[str, Any]:
+    def delete_task(self, project_id: int, task_id: int) -> dict[str, Any]:
         """Delete task and its output."""
         return self._request("DELETE", f"project/{project_id}/tasks/{task_id}")
 
-    def restart_task(self, project_id: int, task_id: int) -> Dict[str, Any]:
+    def restart_task(self, project_id: int, task_id: int) -> dict[str, Any]:
         """Restart a task (typically used for failed or stopped tasks)."""
         # Note: This endpoint may need to be verified with SemaphoreUI API docs
         # It might be POST /project/{project_id}/tasks/{task_id}/restart
         return self._request("POST", f"project/{project_id}/tasks/{task_id}/restart")
 
     # Environment endpoints
-    def list_environments(self, project_id: int) -> List[Dict[str, Any]]:
+    def list_environments(self, project_id: int) -> list[dict[str, Any]]:
         """List all environments for a project."""
         result = self._request("GET", f"project/{project_id}/environment")
         return result if isinstance(result, list) else []
 
-    def get_environment(self, project_id: int, environment_id: int) -> Dict[str, Any]:
+    def get_environment(self, project_id: int, environment_id: int) -> dict[str, Any]:
         """Get an environment by ID."""
         return self._request(
             "GET", f"project/{project_id}/environment/{environment_id}"
         )
 
     def create_environment(
-        self, project_id: int, name: str, env_data: Dict[str, str]
-    ) -> Dict[str, Any]:
+        self, project_id: int, name: str, env_data: dict[str, str]
+    ) -> dict[str, Any]:
         """Create a new environment for a project.
 
         Args:
@@ -198,8 +198,8 @@ class SemaphoreAPIClient:
         project_id: int,
         environment_id: int,
         name: Optional[str] = None,
-        env_data: Optional[Dict[str, str]] = None,
-    ) -> Dict[str, Any]:
+        env_data: Optional[dict[str, str]] = None,
+    ) -> dict[str, Any]:
         """Update an existing environment.
 
         Args:
@@ -212,7 +212,7 @@ class SemaphoreAPIClient:
             Updated environment information
         """
         # Include project_id and environment_id in payload to match SemaphoreUI API requirements
-        payload: Dict[str, Any] = {"project_id": project_id, "id": environment_id}
+        payload: dict[str, Any] = {"project_id": project_id, "id": environment_id}
 
         # Only update what's specified
         if name is not None:
@@ -229,25 +229,25 @@ class SemaphoreAPIClient:
 
     def delete_environment(
         self, project_id: int, environment_id: int
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Delete an environment by ID."""
         return self._request(
             "DELETE", f"project/{project_id}/environment/{environment_id}"
         )
 
     # Inventory endpoints
-    def list_inventory(self, project_id: int) -> List[Dict[str, Any]]:
+    def list_inventory(self, project_id: int) -> list[dict[str, Any]]:
         """List all inventory items for a project."""
         result = self._request("GET", f"project/{project_id}/inventory")
         return result if isinstance(result, list) else []
 
-    def get_inventory(self, project_id: int, inventory_id: int) -> Dict[str, Any]:
+    def get_inventory(self, project_id: int, inventory_id: int) -> dict[str, Any]:
         """Get an inventory item by ID."""
         return self._request("GET", f"project/{project_id}/inventory/{inventory_id}")
 
     def create_inventory(
         self, project_id: int, name: str, inventory_data: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Create a new inventory item for a project.
 
         Args:
@@ -273,7 +273,7 @@ class SemaphoreAPIClient:
         inventory_id: int,
         name: Optional[str] = None,
         inventory_data: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Update an existing inventory item.
 
         Args:
@@ -300,7 +300,7 @@ class SemaphoreAPIClient:
             "PUT", f"project/{project_id}/inventory/{inventory_id}", json=payload
         )
 
-    def delete_inventory(self, project_id: int, inventory_id: int) -> Dict[str, Any]:
+    def delete_inventory(self, project_id: int, inventory_id: int) -> dict[str, Any]:
         """Delete an inventory item by ID."""
         return self._request("DELETE", f"project/{project_id}/inventory/{inventory_id}")
 

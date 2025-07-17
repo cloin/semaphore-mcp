@@ -23,103 +23,113 @@ class TestEnvironmentToolsCoverage:
     @pytest.mark.asyncio
     async def test_list_environments_error_handling(self, env_tools):
         """Test list_environments error handling."""
-        env_tools.semaphore.list_environments.side_effect = Exception("API Error")
+        env_tools.semaphore.list_environments.side_effect = RuntimeError("API Error")
 
-        with pytest.raises(Exception):
+        with pytest.raises(RuntimeError):
             await env_tools.list_environments(1)
 
     @pytest.mark.asyncio
     async def test_get_environment_error_handling(self, env_tools):
         """Test get_environment error handling."""
-        env_tools.semaphore.get_environment.side_effect = Exception(
+        env_tools.semaphore.get_environment.side_effect = RuntimeError(
             "Environment not found"
         )
 
-        with pytest.raises(Exception):
+        with pytest.raises(RuntimeError):
             await env_tools.get_environment(1, 1)
 
     @pytest.mark.asyncio
     async def test_create_environment_error_handling(self, env_tools):
         """Test create_environment error handling."""
-        env_tools.semaphore.create_environment.side_effect = Exception(
+        env_tools.semaphore.create_environment.side_effect = RuntimeError(
             "Creation failed"
         )
 
-        with pytest.raises(Exception):
+        with pytest.raises(RuntimeError):
             await env_tools.create_environment(1, "test", {"VAR": "value"})
 
     @pytest.mark.asyncio
     async def test_update_environment_name_only_error(self, env_tools):
         """Test update_environment error handling with name only."""
-        env_tools.semaphore.update_environment.side_effect = Exception("Update failed")
+        env_tools.semaphore.update_environment.side_effect = RuntimeError(
+            "Update failed"
+        )
 
-        with pytest.raises(Exception):
+        with pytest.raises(RuntimeError):
             await env_tools.update_environment(1, 1, "new_name")
 
     @pytest.mark.asyncio
     async def test_update_environment_data_only_error(self, env_tools):
         """Test update_environment error handling with data only."""
-        env_tools.semaphore.update_environment.side_effect = Exception("Update failed")
+        env_tools.semaphore.update_environment.side_effect = RuntimeError(
+            "Update failed"
+        )
 
-        with pytest.raises(Exception):
+        with pytest.raises(RuntimeError):
             await env_tools.update_environment(1, 1, env_data={"VAR": "value"})
 
     @pytest.mark.asyncio
     async def test_update_environment_both_error(self, env_tools):
         """Test update_environment error handling with both name and data."""
-        env_tools.semaphore.update_environment.side_effect = Exception("Update failed")
+        env_tools.semaphore.update_environment.side_effect = RuntimeError(
+            "Update failed"
+        )
 
-        with pytest.raises(Exception):
+        with pytest.raises(RuntimeError):
             await env_tools.update_environment(1, 1, "new_name", {"VAR": "value"})
 
     @pytest.mark.asyncio
     async def test_delete_environment_error_handling(self, env_tools):
         """Test delete_environment error handling."""
-        env_tools.semaphore.delete_environment.side_effect = Exception(
+        env_tools.semaphore.delete_environment.side_effect = RuntimeError(
             "Deletion failed"
         )
 
-        with pytest.raises(Exception):
+        with pytest.raises(RuntimeError):
             await env_tools.delete_environment(1, 1)
 
     @pytest.mark.asyncio
     async def test_list_inventory_error_handling(self, env_tools):
         """Test list_inventory error handling."""
-        env_tools.semaphore.list_inventory.side_effect = Exception("API Error")
+        env_tools.semaphore.list_inventory.side_effect = RuntimeError("API Error")
 
-        with pytest.raises(Exception):
+        with pytest.raises(RuntimeError):
             await env_tools.list_inventory(1)
 
     @pytest.mark.asyncio
     async def test_get_inventory_error_handling(self, env_tools):
         """Test get_inventory error handling."""
-        env_tools.semaphore.get_inventory.side_effect = Exception("Inventory not found")
+        env_tools.semaphore.get_inventory.side_effect = RuntimeError(
+            "Inventory not found"
+        )
 
-        with pytest.raises(Exception):
+        with pytest.raises(RuntimeError):
             await env_tools.get_inventory(1, 1)
 
     @pytest.mark.asyncio
     async def test_create_inventory_error_handling(self, env_tools):
         """Test create_inventory error handling."""
-        env_tools.semaphore.create_inventory.side_effect = Exception("Creation failed")
+        env_tools.semaphore.create_inventory.side_effect = RuntimeError(
+            "Creation failed"
+        )
 
-        with pytest.raises(Exception):
+        with pytest.raises(RuntimeError):
             await env_tools.create_inventory(1, "test", "[webservers]\nlocalhost")
 
     @pytest.mark.asyncio
     async def test_update_inventory_name_only_error(self, env_tools):
         """Test update_inventory error handling with name only."""
-        env_tools.semaphore.update_inventory.side_effect = Exception("Update failed")
+        env_tools.semaphore.update_inventory.side_effect = RuntimeError("Update failed")
 
-        with pytest.raises(Exception):
+        with pytest.raises(RuntimeError):
             await env_tools.update_inventory(1, 1, "new_name")
 
     @pytest.mark.asyncio
     async def test_update_inventory_data_only_error(self, env_tools):
         """Test update_inventory error handling with data only."""
-        env_tools.semaphore.update_inventory.side_effect = Exception("Update failed")
+        env_tools.semaphore.update_inventory.side_effect = RuntimeError("Update failed")
 
-        with pytest.raises(Exception):
+        with pytest.raises(RuntimeError):
             await env_tools.update_inventory(
                 1, 1, inventory_data="[webservers]\nlocalhost"
             )
@@ -127,9 +137,9 @@ class TestEnvironmentToolsCoverage:
     @pytest.mark.asyncio
     async def test_update_inventory_both_error(self, env_tools):
         """Test update_inventory error handling with both name and data."""
-        env_tools.semaphore.update_inventory.side_effect = Exception("Update failed")
+        env_tools.semaphore.update_inventory.side_effect = RuntimeError("Update failed")
 
-        with pytest.raises(Exception):
+        with pytest.raises(RuntimeError):
             await env_tools.update_inventory(
                 1, 1, "new_name", "[webservers]\nlocalhost"
             )
@@ -137,9 +147,11 @@ class TestEnvironmentToolsCoverage:
     @pytest.mark.asyncio
     async def test_delete_inventory_error_handling(self, env_tools):
         """Test delete_inventory error handling."""
-        env_tools.semaphore.delete_inventory.side_effect = Exception("Deletion failed")
+        env_tools.semaphore.delete_inventory.side_effect = RuntimeError(
+            "Deletion failed"
+        )
 
-        with pytest.raises(Exception):
+        with pytest.raises(RuntimeError):
             await env_tools.delete_inventory(1, 1)
 
     @pytest.mark.asyncio

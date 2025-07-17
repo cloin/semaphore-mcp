@@ -89,7 +89,7 @@ class TestMCPServer:
         # After refactoring, we'll test trying to access a non-existent tool on the project_tools class
         with pytest.raises((AttributeError, ValueError)):
             # Try to access a non-existent tool
-            await getattr(server.project_tools, "invalid_tool")()
+            await server.project_tools.invalid_tool()
 
     @pytest.mark.asyncio
     async def test_list_tasks_default_limit(self, server):

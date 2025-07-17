@@ -8,7 +8,7 @@ import asyncio
 import json
 import logging
 import time
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Optional, Union
 
 import requests  # type: ignore
 
@@ -31,36 +31,36 @@ class TaskTools(BaseTool):
 
     def _build_task_url(self, project_id: int, task_id: int) -> str:
         """Build a web URL for viewing a task in SemaphoreUI.
-        
+
         Args:
             project_id: Project ID
             task_id: Task ID
-            
+
         Returns:
             URL string for viewing the task
         """
         # Get the base URL from the semaphore client
-        base_url = self.semaphore.base_url.rstrip('/')
-        
+        base_url = self.semaphore.base_url.rstrip("/")
+
         # Remove /api suffix if present to get the web UI base
-        if base_url.endswith('/api'):
+        if base_url.endswith("/api"):
             base_url = base_url[:-4]
-        
+
         return f"{base_url}/project/{project_id}/history?t={task_id}"
 
     def _build_project_tasks_url(self, project_id: int) -> str:
         """Build a web URL for viewing all tasks in a project.
-        
+
         Args:
             project_id: Project ID
-            
+
         Returns:
             URL string for viewing project tasks
         """
-        base_url = self.semaphore.base_url.rstrip('/')
-        if base_url.endswith('/api'):
+        base_url = self.semaphore.base_url.rstrip("/")
+        if base_url.endswith("/api"):
             base_url = base_url[:-4]
-        
+
         return f"{base_url}/project/{project_id}/history"
 
     async def list_tasks(
@@ -68,8 +68,8 @@ class TaskTools(BaseTool):
         project_id: int,
         limit: int = 5,
         status: Optional[str] = None,
-        tags: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        tags: Optional[list[str]] = None,
+    ) -> dict[str, Any]:
         """List tasks for a project with a default limit of 5 to avoid overloading context windows.
 
         Args:
@@ -132,7 +132,7 @@ class TaskTools(BaseTool):
         except Exception as e:
             self.handle_error(e, f"listing tasks for project {project_id}")
 
-    async def get_latest_failed_task(self, project_id: int) -> Dict[str, Any]:
+    async def get_latest_failed_task(self, project_id: int) -> dict[str, Any]:
         """Get the most recent failed task for a project.
 
         Args:
@@ -168,7 +168,7 @@ class TaskTools(BaseTool):
         except Exception as e:
             self.handle_error(e, f"getting latest failed task for project {project_id}")
 
-    async def get_task(self, project_id: int, task_id: int) -> Dict[str, Any]:
+    async def get_task(self, project_id: int, task_id: int) -> dict[str, Any]:
         """Get details of a specific task.
 
         Args:
@@ -206,9 +206,9 @@ class TaskTools(BaseTool):
         self,
         template_id: int,
         project_id: Optional[int] = None,
-        environment: Optional[Dict[str, str]] = None,
+        environment: Optional[dict[str, str]] = None,
         follow: bool = False,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Run a task from a template with optional 30-second monitoring.
 
         Args:
@@ -219,11 +219,11 @@ class TaskTools(BaseTool):
 
         Returns:
             Task execution result with immediate web URLs and optional monitoring summary
-            
+
         Examples:
             # Just start the task and get URLs
             result = await run_task(template_id=5)
-            
+
             # Start task with 30-second monitoring and get URLs
             result = await run_task(template_id=5, follow=True)
         """
@@ -283,7 +283,7 @@ class TaskTools(BaseTool):
                 task_result = self.semaphore.run_task(
                     project_id, template_id, environment=environment
                 )
-                
+
                 # Extract task ID for URL generation
                 task_id = task_result.get("id")
                 if not task_id:
@@ -291,7 +291,7 @@ class TaskTools(BaseTool):
                     return {
                         "error": "Could not extract task ID for URL generation",
                         "original_result": task_result,
-                        "suggestion": "Check if the task was created successfully"
+                        "suggestion": "Check if the task was created successfully",
                     }
 
                 # Build URLs for immediate access
@@ -301,40 +301,47 @@ class TaskTools(BaseTool):
                 # Prepare base response with immediate URL access
                 response = {
                     "task": task_result,
-                    "web_urls": {
-                        "task_detail": task_url,
-                        "project_tasks": project_url
-                    },
+                    "web_urls": {"task_detail": task_url, "project_tasks": project_url},
                     "message": f"Task #{task_id} started successfully!",
-                    "next_steps": "Use the task_detail URL above to monitor progress in SemaphoreUI"
+                    "next_steps": "Use the task_detail URL above to monitor progress in SemaphoreUI",
                 }
 
                 # If follow is False, return immediately with URLs
                 if not follow:
                     response["monitoring"] = {
                         "enabled": False,
-                        "message": "Use the web URL above to monitor task progress"
+                        "message": "Use the web URL above to monitor task progress",
                     }
                     return response
 
                 # If follow is True, do 30-second smart monitoring
-                logger.info(f"Starting 30-second monitoring for task {task_id} in project {project_id}")
-                
-                monitoring_result = await self._monitor_task_startup(project_id, task_id)
-                
+                logger.info(
+                    f"Starting 30-second monitoring for task {task_id} in project {project_id}"
+                )
+
+                monitoring_result = await self._monitor_task_startup(
+                    project_id, task_id
+                )
+
                 response["monitoring"] = monitoring_result
-                
+
                 # Update the message based on monitoring results
                 if monitoring_result.get("completed"):
                     final_status = monitoring_result.get("final_status")
                     if final_status in ["success", "successful"]:
                         response["message"] = f"Task #{task_id} completed successfully!"
                     elif final_status in ["error", "failed"]:
-                        response["message"] = f"Task #{task_id} failed. Check logs via the URL above."
+                        response["message"] = (
+                            f"Task #{task_id} failed. Check logs via the URL above."
+                        )
                     else:
-                        response["message"] = f"Task #{task_id} finished with status: {final_status}"
+                        response["message"] = (
+                            f"Task #{task_id} finished with status: {final_status}"
+                        )
                 else:
-                    response["message"] = f"Task #{task_id} is still running. Use the URL above for live progress."
+                    response["message"] = (
+                        f"Task #{task_id} is still running. Use the URL above for live progress."
+                    )
 
                 return response
 
@@ -351,12 +358,12 @@ class TaskTools(BaseTool):
                 if status_code == 400 and environment:
                     error_msg += ". The 400 Bad Request might be related to unsupported environment variables"
                 logger.error(error_msg)
-                raise RuntimeError(error_msg)
+                raise RuntimeError(error_msg) from None
             except Exception as e:
                 logger.error(
                     f"Error running task for template {template_id} in project {project_id}: {str(e)}"
                 )
-                raise RuntimeError(f"Error running task: {str(e)}")
+                raise RuntimeError(f"Error running task: {str(e)}") from e
 
         except requests.exceptions.ConnectionError as e:
             error_msg = f"Connection error while running task: {str(e)}"
@@ -364,7 +371,7 @@ class TaskTools(BaseTool):
             return {
                 "error": error_msg,
                 "error_type": "connection_error",
-                "suggestion": "Check if SemaphoreUI is running and accessible"
+                "suggestion": "Check if SemaphoreUI is running and accessible",
             }
         except requests.exceptions.HTTPError as e:
             error_msg = f"HTTP error while running task: {str(e)}"
@@ -372,15 +379,17 @@ class TaskTools(BaseTool):
             return {
                 "error": error_msg,
                 "error_type": "http_error",
-                "suggestion": "Check API credentials and template permissions"
+                "suggestion": "Check API credentials and template permissions",
             }
         except Exception as e:
-            error_msg = f"Unexpected error running task for template {template_id}: {str(e)}"
+            error_msg = (
+                f"Unexpected error running task for template {template_id}: {str(e)}"
+            )
             logger.error(error_msg)
             return {
                 "error": error_msg,
                 "error_type": "unexpected_error",
-                "suggestion": "Check logs for more details"
+                "suggestion": "Check logs for more details",
             }
 
     async def get_task_output(self, project_id: int, task_id: int) -> str:
@@ -400,7 +409,7 @@ class TaskTools(BaseTool):
         except Exception as e:
             self.handle_error(e, f"getting output for task {task_id}")
 
-    async def stop_task(self, project_id: int, task_id: int) -> Dict[str, Any]:
+    async def stop_task(self, project_id: int, task_id: int) -> dict[str, Any]:
         """Stop a running task.
 
         Args:
@@ -418,10 +427,10 @@ class TaskTools(BaseTool):
     async def filter_tasks(
         self,
         project_id: int,
-        status: Optional[List[str]] = None,
+        status: Optional[list[str]] = None,
         limit: int = 50,
         use_last_tasks: bool = True,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Filter tasks by multiple criteria with bulk operation support.
 
         Args:
@@ -471,7 +480,7 @@ class TaskTools(BaseTool):
             limited_tasks = sorted_tasks[:limit]
 
             # Generate statistics
-            stats: Dict[str, Union[int, Dict[str, int]]] = {
+            stats: dict[str, Union[int, dict[str, int]]] = {
                 "total_tasks": len(all_tasks),
                 "filtered_tasks": len(filtered_tasks),
                 "returned_tasks": len(limited_tasks),
@@ -479,7 +488,7 @@ class TaskTools(BaseTool):
 
             # Status breakdown
             if filtered_tasks:
-                status_counts: Dict[str, int] = {}
+                status_counts: dict[str, int] = {}
                 for task in filtered_tasks:
                     task_status = task.get("status", "unknown")
                     status_counts[task_status] = status_counts.get(task_status, 0) + 1
@@ -494,8 +503,8 @@ class TaskTools(BaseTool):
             self.handle_error(e, f"filtering tasks for project {project_id}")
 
     async def bulk_stop_tasks(
-        self, project_id: int, task_ids: List[int], confirm: bool = False
-    ) -> Dict[str, Any]:
+        self, project_id: int, task_ids: list[int], confirm: bool = False
+    ) -> dict[str, Any]:
         """Stop multiple tasks with confirmation.
 
         Args:
@@ -528,7 +537,7 @@ class TaskTools(BaseTool):
                         )
 
                 # Generate confirmation message
-                status_counts: Dict[str, int] = {}
+                status_counts: dict[str, int] = {}
                 for task in task_details:
                     status = task["status"]
                     status_counts[status] = status_counts.get(status, 0) + 1
@@ -571,7 +580,7 @@ class TaskTools(BaseTool):
         except Exception as e:
             self.handle_error(e, f"bulk stopping tasks for project {project_id}")
 
-    async def restart_task(self, project_id: int, task_id: int) -> Dict[str, Any]:
+    async def restart_task(self, project_id: int, task_id: int) -> dict[str, Any]:
         """Restart a stopped or failed task.
 
         Args:
@@ -587,8 +596,8 @@ class TaskTools(BaseTool):
             self.handle_error(e, f"restarting task {task_id}")
 
     async def bulk_restart_tasks(
-        self, project_id: int, task_ids: List[int]
-    ) -> Dict[str, Any]:
+        self, project_id: int, task_ids: list[int]
+    ) -> dict[str, Any]:
         """Restart multiple tasks in bulk.
 
         Args:
@@ -610,9 +619,9 @@ class TaskTools(BaseTool):
         except Exception as e:
             self.handle_error(e, f"bulk restarting tasks for project {project_id}")
 
-
-
-    async def _monitor_task_startup(self, project_id: int, task_id: int) -> Dict[str, Any]:
+    async def _monitor_task_startup(
+        self, project_id: int, task_id: int
+    ) -> dict[str, Any]:
         """Monitor task for 30 seconds to catch quick completions and startup issues.
 
         Args:
@@ -628,19 +637,19 @@ class TaskTools(BaseTool):
         poll_count = 0
         consecutive_errors = 0
         max_consecutive_errors = 3
-        
+
         # Fixed 30-second monitoring with 3-second intervals
         monitoring_duration = 30
         poll_interval = 3
         max_polls = 10  # 30 seconds / 3 seconds = 10 polls
-        
+
         logger.info(f"Starting 30-second startup monitoring for task {task_id}")
 
         # Small initial delay to allow task to be created in API
         await asyncio.sleep(0.5)
 
         try:
-            for poll_num in range(max_polls):
+            for _poll_num in range(max_polls):
                 current_time = time.time()
                 elapsed = current_time - start_time
 
@@ -670,7 +679,13 @@ class TaskTools(BaseTool):
                         last_status = current_status
 
                     # Check if task completed
-                    if current_status in ["success", "error", "stopped", "successful", "failed"]:
+                    if current_status in [
+                        "success",
+                        "error",
+                        "stopped",
+                        "successful",
+                        "failed",
+                    ]:
                         # Get final output if available
                         output_available = False
                         try:
@@ -689,14 +704,14 @@ class TaskTools(BaseTool):
                                 "output_available": output_available,
                             }
                         )
-                        
+
                         return {
                             "completed": True,
                             "duration_seconds": elapsed,
                             "final_status": current_status,
                             "total_polls": poll_count,
                             "status_updates": status_updates,
-                            "summary": f"Task finished in {elapsed:.1f}s with status: {current_status}"
+                            "summary": f"Task finished in {elapsed:.1f}s with status: {current_status}",
                         }
 
                     # Continue monitoring
@@ -705,18 +720,29 @@ class TaskTools(BaseTool):
                 except requests.exceptions.HTTPError as e:
                     # Handle 404 errors with fallback to task list
                     consecutive_errors += 1
-                    
+
                     if "404" in str(e) and poll_count < 3:
                         try:
-                            logger.info(f"Task {task_id} not found via direct API, trying task list...")
+                            logger.info(
+                                f"Task {task_id} not found via direct API, trying task list..."
+                            )
                             tasks = self.semaphore.list_tasks(project_id)
                             if isinstance(tasks, list):
-                                matching_task = next((task for task in tasks if task.get("id") == task_id), None)
+                                matching_task = next(
+                                    (
+                                        task
+                                        for task in tasks
+                                        if task.get("id") == task_id
+                                    ),
+                                    None,
+                                )
                                 if matching_task:
-                                    current_status = matching_task.get("status", "unknown")
+                                    current_status = matching_task.get(
+                                        "status", "unknown"
+                                    )
                                     poll_count += 1
                                     consecutive_errors = 0
-                                    
+
                                     if current_status != last_status:
                                         status_msg = f"Task {task_id}: {last_status or 'started'} → {current_status} (via task list)"
                                         logger.info(status_msg)
@@ -726,13 +752,19 @@ class TaskTools(BaseTool):
                                                 "status": current_status,
                                                 "message": status_msg,
                                                 "poll_count": poll_count,
-                                                "source": "task_list"
+                                                "source": "task_list",
                                             }
                                         )
                                         last_status = current_status
-                                    
+
                                     # Check if complete
-                                    if current_status in ["success", "error", "stopped", "successful", "failed"]:
+                                    if current_status in [
+                                        "success",
+                                        "error",
+                                        "stopped",
+                                        "successful",
+                                        "failed",
+                                    ]:
                                         completion_msg = f"Task completed with status: {current_status} (via task list)"
                                         logger.info(completion_msg)
                                         status_updates.append(
@@ -741,24 +773,26 @@ class TaskTools(BaseTool):
                                                 "message": completion_msg,
                                                 "status": current_status,
                                                 "output_available": False,
-                                                "source": "task_list"
+                                                "source": "task_list",
                                             }
                                         )
-                                        
+
                                         return {
                                             "completed": True,
                                             "duration_seconds": elapsed,
                                             "final_status": current_status,
                                             "total_polls": poll_count,
                                             "status_updates": status_updates,
-                                            "summary": f"Task finished in {elapsed:.1f}s with status: {current_status}"
+                                            "summary": f"Task finished in {elapsed:.1f}s with status: {current_status}",
                                         }
-                                    
+
                                     await asyncio.sleep(poll_interval)
                                     continue
                         except Exception as list_error:
-                            logger.warning(f"Error checking task list: {str(list_error)}")
-                    
+                            logger.warning(
+                                f"Error checking task list: {str(list_error)}"
+                            )
+
                     # Log the HTTP error
                     error_msg = f"HTTP error polling task status (attempt {consecutive_errors}): {str(e)}"
                     status_updates.append(
@@ -770,11 +804,11 @@ class TaskTools(BaseTool):
                         }
                     )
                     logger.warning(error_msg)
-                    
+
                     # Give up after too many consecutive errors
                     if consecutive_errors >= max_consecutive_errors:
                         break
-                    
+
                     await asyncio.sleep(poll_interval)
 
                 except Exception as e:
@@ -789,18 +823,20 @@ class TaskTools(BaseTool):
                         }
                     )
                     logger.error(error_msg)
-                    
+
                     if consecutive_errors >= max_consecutive_errors:
                         break
-                    
+
                     await asyncio.sleep(poll_interval)
 
             # If we get here, monitoring completed without task finishing
             current_time = time.time()
             elapsed = current_time - start_time
-            
-            logger.info(f"30-second monitoring completed for task {task_id}: {poll_count} polls, status: {last_status}")
-            
+
+            logger.info(
+                f"30-second monitoring completed for task {task_id}: {poll_count} polls, status: {last_status}"
+            )
+
             return {
                 "completed": False,
                 "duration_seconds": elapsed,
@@ -814,10 +850,10 @@ class TaskTools(BaseTool):
         except Exception as e:
             current_time = time.time()
             elapsed = current_time - start_time
-            
+
             error_msg = f"Critical error during startup monitoring: {str(e)}"
             logger.error(error_msg)
-            
+
             return {
                 "completed": False,
                 "monitoring_failed": True,
@@ -844,7 +880,7 @@ class TaskTools(BaseTool):
 
     async def analyze_task_failure(
         self, project_id: int, task_id: int
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Analyze a failed task for LLM processing, gathering comprehensive failure context.
 
         Args:
@@ -983,7 +1019,7 @@ class TaskTools(BaseTool):
 
     async def bulk_analyze_failures(
         self, project_id: int, limit: int = 10
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Analyze multiple failed tasks to identify patterns and common issues.
 
         Args:
@@ -1008,8 +1044,8 @@ class TaskTools(BaseTool):
 
             # Analyze each failed task
             analyses = []
-            error_patterns: Dict[str, int] = {}
-            template_failure_counts: Dict[str, int] = {}
+            error_patterns: dict[str, int] = {}
+            template_failure_counts: dict[str, int] = {}
 
             for task in failed_tasks:
                 task_id = task.get("id")
@@ -1122,7 +1158,7 @@ class TaskTools(BaseTool):
         except Exception as e:
             self.handle_error(e, f"bulk analyzing failures for project {project_id}")
 
-    async def get_waiting_tasks(self, project_id: int) -> Dict[str, Any]:
+    async def get_waiting_tasks(self, project_id: int) -> dict[str, Any]:
         """Get all tasks in waiting state for bulk operations.
 
         Args:

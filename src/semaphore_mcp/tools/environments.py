@@ -6,7 +6,7 @@ These tools support full CRUD operations for both environments and inventory ite
 """
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from .base import BaseTool
 
@@ -22,7 +22,7 @@ class EnvironmentTools(BaseTool):
 
     # Environment-related tools
 
-    async def list_environments(self, project_id: int) -> Dict[str, Any]:
+    async def list_environments(self, project_id: int) -> dict[str, Any]:
         """List all environments for a project.
 
         Args:
@@ -39,7 +39,7 @@ class EnvironmentTools(BaseTool):
 
     async def get_environment(
         self, project_id: int, environment_id: int
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get details of a specific environment.
 
         Args:
@@ -55,8 +55,8 @@ class EnvironmentTools(BaseTool):
             self.handle_error(e, f"getting environment {environment_id}")
 
     async def create_environment(
-        self, project_id: int, name: str, env_data: Dict[str, str]
-    ) -> Dict[str, Any]:
+        self, project_id: int, name: str, env_data: dict[str, str]
+    ) -> dict[str, Any]:
         """Create a new environment.
 
         Args:
@@ -79,8 +79,8 @@ class EnvironmentTools(BaseTool):
         project_id: int,
         environment_id: int,
         name: Optional[str] = None,
-        env_data: Optional[Dict[str, str]] = None,
-    ) -> Dict[str, Any]:
+        env_data: Optional[dict[str, str]] = None,
+    ) -> dict[str, Any]:
         """Update an existing environment.
 
         Args:
@@ -101,7 +101,7 @@ class EnvironmentTools(BaseTool):
 
     async def delete_environment(
         self, project_id: int, environment_id: int
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Delete an environment.
 
         Args:
@@ -118,7 +118,7 @@ class EnvironmentTools(BaseTool):
 
     # Inventory-related tools
 
-    async def list_inventory(self, project_id: int) -> Dict[str, Any]:
+    async def list_inventory(self, project_id: int) -> dict[str, Any]:
         """List all inventory items for a project.
 
         Args:
@@ -133,7 +133,7 @@ class EnvironmentTools(BaseTool):
         except Exception as e:
             self.handle_error(e, f"listing inventory for project {project_id}")
 
-    async def get_inventory(self, project_id: int, inventory_id: int) -> Dict[str, Any]:
+    async def get_inventory(self, project_id: int, inventory_id: int) -> dict[str, Any]:
         """Get details of a specific inventory item.
 
         Args:
@@ -150,7 +150,7 @@ class EnvironmentTools(BaseTool):
 
     async def create_inventory(
         self, project_id: int, name: str, inventory_data: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Create a new inventory item.
 
         Args:
@@ -172,7 +172,7 @@ class EnvironmentTools(BaseTool):
         inventory_id: int,
         name: Optional[str] = None,
         inventory_data: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Update an existing inventory item.
 
         Args:
@@ -193,7 +193,7 @@ class EnvironmentTools(BaseTool):
 
     async def delete_inventory(
         self, project_id: int, inventory_id: int
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Delete an inventory item.
 
         Args:
