@@ -7,6 +7,7 @@ This module provides tools for interacting with Semaphore tasks.
 import asyncio
 import json
 import logging
+import time
 from typing import Any, Dict, List, Optional, Union
 
 import requests  # type: ignore
@@ -27,6 +28,40 @@ class TaskTools(BaseTool):
         "waiting": "waiting",
         "stopped": "stopped",  # May need to verify this mapping
     }
+
+    def _build_task_url(self, project_id: int, task_id: int) -> str:
+        """Build a web URL for viewing a task in SemaphoreUI.
+        
+        Args:
+            project_id: Project ID
+            task_id: Task ID
+            
+        Returns:
+            URL string for viewing the task
+        """
+        # Get the base URL from the semaphore client
+        base_url = self.semaphore.base_url.rstrip('/')
+        
+        # Remove /api suffix if present to get the web UI base
+        if base_url.endswith('/api'):
+            base_url = base_url[:-4]
+        
+        return f"{base_url}/project/{project_id}/history?t={task_id}"
+
+    def _build_project_tasks_url(self, project_id: int) -> str:
+        """Build a web URL for viewing all tasks in a project.
+        
+        Args:
+            project_id: Project ID
+            
+        Returns:
+            URL string for viewing project tasks
+        """
+        base_url = self.semaphore.base_url.rstrip('/')
+        if base_url.endswith('/api'):
+            base_url = base_url[:-4]
+        
+        return f"{base_url}/project/{project_id}/history"
 
     async def list_tasks(
         self,
@@ -173,7 +208,7 @@ class TaskTools(BaseTool):
         project_id: Optional[int] = None,
         environment: Optional[Dict[str, str]] = None,
     ) -> Dict[str, Any]:
-        """Run a task from a template.
+        """Run a task from a template and provide web URL for monitoring.
 
         Args:
             template_id: ID of the template to run
@@ -181,7 +216,7 @@ class TaskTools(BaseTool):
             environment: Optional environment variables for the task as dictionary
 
         Returns:
-            Task run result
+            Task run result with web URLs for monitoring
         """
         try:
             # If project_id is not provided, we need to find it
@@ -236,9 +271,32 @@ class TaskTools(BaseTool):
 
             # Now run the task with the determined project_id
             try:
-                return self.semaphore.run_task(
+                task_result = self.semaphore.run_task(
                     project_id, template_id, environment=environment
                 )
+                
+                # Extract task ID for URL generation
+                task_id = task_result.get("id")
+                if task_id:
+                    # Build URLs for immediate access
+                    task_url = self._build_task_url(project_id, task_id)
+                    project_url = self._build_project_tasks_url(project_id)
+                    
+                    # Return enhanced response with URLs
+                    return {
+                        "task": task_result,
+                        "web_urls": {
+                            "task_detail": task_url,
+                            "project_tasks": project_url
+                        },
+                        "message": f"Task #{task_id} started successfully!",
+                        "next_steps": "Use the task_detail URL above to monitor progress in SemaphoreUI"
+                    }
+                else:
+                    # Fallback if no task ID available
+                    logger.warning("Task result missing ID field, returning raw result")
+                    return task_result
+                    
             except requests.exceptions.HTTPError as http_err:
                 status_code = (
                     http_err.response.status_code
@@ -497,92 +555,163 @@ class TaskTools(BaseTool):
         project_id: Optional[int] = None,
         environment: Optional[Dict[str, str]] = None,
         follow: bool = False,
-        poll_interval: int = 3,
-        max_poll_duration: int = 300,
     ) -> Dict[str, Any]:
-        """Run a task with optional progress monitoring.
+        """Run a task and provide immediate web URL with optional 30-second monitoring.
 
         Args:
             template_id: ID of the template to run
             project_id: Optional project ID
             environment: Optional environment variables
-            follow: Enable monitoring and status updates
-            poll_interval: Seconds between status checks (default: 3)
-            max_poll_duration: Maximum time to poll in seconds (default: 300)
+            follow: Enable 30-second monitoring for startup verification (default: False)
 
         Returns:
-            Task execution result with optional monitoring updates
+            Task execution result with immediate web URL and optional monitoring summary
+            
+        Examples:
+            # Just start the task and get the URL
+            result = await run_task_with_monitoring(template_id=5)
+            
+            # Start task with 30-second monitoring
+            result = await run_task_with_monitoring(template_id=5, follow=True)
         """
         try:
             # Start the task using existing run_task method
             task_result = await self.run_task(template_id, project_id, environment)
 
-            if not follow:
-                return task_result
+            # Handle the new enhanced response format from run_task
+            if "task" in task_result:
+                # New format with URLs already included
+                actual_task = task_result["task"]
+                existing_urls = task_result.get("web_urls", {})
+            else:
+                # Fallback for raw task result (shouldn't happen with updated run_task)
+                actual_task = task_result
+                existing_urls = {}
 
-            # Extract task and project IDs for monitoring
-            task_id = task_result.get("id")
+            # Extract task and project IDs
+            task_id = actual_task.get("id")
             if not task_id:
+                logger.error(f"Task result missing ID field: {actual_task}")
                 return {
-                    "error": "Could not extract task ID for monitoring",
+                    "error": "Could not extract task ID for URL generation",
                     "original_result": task_result,
+                    "suggestion": "Check if the task was created successfully"
                 }
 
             # Determine project_id if not provided
             if not project_id:
-                # Try to extract from task result or use template lookup
-                project_id = task_result.get("project_id")
+                project_id = actual_task.get("project_id")
                 if not project_id:
+                    logger.error(f"Could not determine project_id from task result: {actual_task}")
                     return {
-                        "error": "Could not determine project ID for monitoring",
+                        "error": "Could not determine project ID for URL generation",
                         "original_result": task_result,
+                        "suggestion": "Provide project_id parameter explicitly"
                     }
 
-            # Start monitoring
-            monitoring_result = await self._monitor_task_execution(
-                project_id, task_id, poll_interval, max_poll_duration
-            )
+            # Build URLs (reuse existing ones if available)
+            task_url = existing_urls.get("task_detail") or self._build_task_url(project_id, task_id)
+            project_url = existing_urls.get("project_tasks") or self._build_project_tasks_url(project_id)
 
-            return {"task_started": task_result, "monitoring": monitoring_result}
+            # Prepare the base response with immediate URL access
+            response = {
+                "task_started": actual_task,
+                "web_urls": {
+                    "task_detail": task_url,
+                    "project_tasks": project_url
+                },
+                "message": f"Task #{task_id} started successfully!",
+                "next_steps": "Use the task_detail URL above to monitor progress in real-time"
+            }
 
+            # If follow is False, return immediately with URLs
+            if not follow:
+                response["monitoring"] = {
+                    "enabled": False,
+                    "message": "Use the web URL above to monitor task progress"
+                }
+                return response
+
+            # If follow is True, do 30-second smart monitoring
+            logger.info(f"Starting 30-second monitoring for task {task_id} in project {project_id}")
+            
+            monitoring_result = await self._monitor_task_startup(project_id, task_id)
+            
+            response["monitoring"] = monitoring_result
+            
+            # Update the message based on monitoring results
+            if monitoring_result.get("completed"):
+                final_status = monitoring_result.get("final_status")
+                if final_status in ["success", "successful"]:
+                    response["message"] = f"Task #{task_id} completed successfully!"
+                elif final_status in ["error", "failed"]:
+                    response["message"] = f"Task #{task_id} failed. Check logs via the URL above."
+                else:
+                    response["message"] = f"Task #{task_id} finished with status: {final_status}"
+            else:
+                response["message"] = f"Task #{task_id} is still running. Use the URL above for live progress."
+
+            return response
+
+        except requests.exceptions.ConnectionError as e:
+            error_msg = f"Connection error while running task with monitoring: {str(e)}"
+            logger.error(error_msg)
+            return {
+                "error": error_msg,
+                "error_type": "connection_error",
+                "suggestion": "Check if SemaphoreUI is running and accessible"
+            }
+        except requests.exceptions.HTTPError as e:
+            error_msg = f"HTTP error while running task with monitoring: {str(e)}"
+            logger.error(error_msg)
+            return {
+                "error": error_msg,
+                "error_type": "http_error",
+                "suggestion": "Check API credentials and template permissions"
+            }
         except Exception as e:
-            self.handle_error(
-                e, f"running task with monitoring for template {template_id}"
-            )
+            error_msg = f"Unexpected error running task with monitoring for template {template_id}: {str(e)}"
+            logger.error(error_msg)
+            return {
+                "error": error_msg,
+                "error_type": "unexpected_error",
+                "suggestion": "Check logs for more details"
+            }
 
-    async def _monitor_task_execution(
-        self, project_id: int, task_id: int, poll_interval: int, max_poll_duration: int
-    ) -> Dict[str, Any]:
-        """Monitor task execution with smart polling.
+    async def _monitor_task_startup(self, project_id: int, task_id: int) -> Dict[str, Any]:
+        """Monitor task for 30 seconds to catch quick completions and startup issues.
 
         Args:
             project_id: Project ID
             task_id: Task ID to monitor
-            poll_interval: Seconds between polls
-            max_poll_duration: Maximum monitoring duration
 
         Returns:
-            Monitoring results with status updates
+            Monitoring summary focused on startup verification
         """
         status_updates = []
-        start_time = asyncio.get_event_loop().time()
+        start_time = time.time()
         last_status = None
         poll_count = 0
+        consecutive_errors = 0
+        max_consecutive_errors = 3
+        
+        # Fixed 30-second monitoring with 3-second intervals
+        monitoring_duration = 30
+        poll_interval = 3
+        max_polls = 10  # 30 seconds / 3 seconds = 10 polls
+        
+        logger.info(f"Starting 30-second startup monitoring for task {task_id}")
+
+        # Small initial delay to allow task to be created in API
+        await asyncio.sleep(0.5)
 
         try:
-            while True:
-                current_time = asyncio.get_event_loop().time()
+            for poll_num in range(max_polls):
+                current_time = time.time()
                 elapsed = current_time - start_time
 
-                # Check timeout
-                if elapsed > max_poll_duration:
-                    status_updates.append(
-                        {
-                            "timestamp": current_time,
-                            "message": f"Monitoring timeout after {max_poll_duration}s",
-                            "status": "timeout",
-                        }
-                    )
+                # Check if we've exceeded 30 seconds
+                if elapsed > monitoring_duration:
                     break
 
                 # Get current task status
@@ -590,81 +719,178 @@ class TaskTools(BaseTool):
                     task = self.semaphore.get_task(project_id, task_id)
                     current_status = task.get("status", "unknown")
                     poll_count += 1
+                    consecutive_errors = 0  # Reset error count on success
 
                     # Log status change
                     if current_status != last_status:
+                        status_msg = f"Task {task_id}: {last_status or 'started'} → {current_status}"
+                        logger.info(status_msg)
                         status_updates.append(
                             {
                                 "timestamp": current_time,
                                 "status": current_status,
-                                "message": f"Task {task_id}: {last_status or 'started'} → {current_status}",
+                                "message": status_msg,
                                 "poll_count": poll_count,
                             }
                         )
                         last_status = current_status
 
-                    # Check if task is complete
-                    if current_status in ["success", "error", "stopped"]:
-                        # Get final output
+                    # Check if task completed
+                    if current_status in ["success", "error", "stopped", "successful", "failed"]:
+                        # Get final output if available
+                        output_available = False
                         try:
                             self.semaphore.get_task_output(project_id, task_id)
-                            status_updates.append(
-                                {
-                                    "timestamp": current_time,
-                                    "message": f"Task completed with status: {current_status}",
-                                    "status": current_status,
-                                    "output_available": True,
-                                }
-                            )
-                        except Exception as e:
-                            status_updates.append(
-                                {
-                                    "timestamp": current_time,
-                                    "message": f"Task completed but output unavailable: {str(e)}",
-                                    "status": current_status,
-                                    "output_available": False,
-                                }
-                            )
-                        break
+                            output_available = True
+                        except Exception:
+                            pass  # Output not available yet, that's ok
 
-                    # Continue polling for running/waiting tasks
-                    if current_status in ["running", "waiting"]:
-                        await asyncio.sleep(poll_interval)
-                        continue
+                        completion_msg = f"Task completed with status: {current_status}"
+                        logger.info(completion_msg)
+                        status_updates.append(
+                            {
+                                "timestamp": current_time,
+                                "message": completion_msg,
+                                "status": current_status,
+                                "output_available": output_available,
+                            }
+                        )
+                        
+                        return {
+                            "completed": True,
+                            "duration_seconds": elapsed,
+                            "final_status": current_status,
+                            "total_polls": poll_count,
+                            "status_updates": status_updates,
+                            "summary": f"Task finished in {elapsed:.1f}s with status: {current_status}"
+                        }
 
-                    # Unknown status - continue polling but log it
+                    # Continue monitoring
+                    await asyncio.sleep(poll_interval)
+
+                except requests.exceptions.HTTPError as e:
+                    # Handle 404 errors with fallback to task list
+                    consecutive_errors += 1
+                    
+                    if "404" in str(e) and poll_count < 3:
+                        try:
+                            logger.info(f"Task {task_id} not found via direct API, trying task list...")
+                            tasks = self.semaphore.list_tasks(project_id)
+                            if isinstance(tasks, list):
+                                matching_task = next((task for task in tasks if task.get("id") == task_id), None)
+                                if matching_task:
+                                    current_status = matching_task.get("status", "unknown")
+                                    poll_count += 1
+                                    consecutive_errors = 0
+                                    
+                                    if current_status != last_status:
+                                        status_msg = f"Task {task_id}: {last_status or 'started'} → {current_status} (via task list)"
+                                        logger.info(status_msg)
+                                        status_updates.append(
+                                            {
+                                                "timestamp": current_time,
+                                                "status": current_status,
+                                                "message": status_msg,
+                                                "poll_count": poll_count,
+                                                "source": "task_list"
+                                            }
+                                        )
+                                        last_status = current_status
+                                    
+                                    # Check if complete
+                                    if current_status in ["success", "error", "stopped", "successful", "failed"]:
+                                        completion_msg = f"Task completed with status: {current_status} (via task list)"
+                                        logger.info(completion_msg)
+                                        status_updates.append(
+                                            {
+                                                "timestamp": current_time,
+                                                "message": completion_msg,
+                                                "status": current_status,
+                                                "output_available": False,
+                                                "source": "task_list"
+                                            }
+                                        )
+                                        
+                                        return {
+                                            "completed": True,
+                                            "duration_seconds": elapsed,
+                                            "final_status": current_status,
+                                            "total_polls": poll_count,
+                                            "status_updates": status_updates,
+                                            "summary": f"Task finished in {elapsed:.1f}s with status: {current_status}"
+                                        }
+                                    
+                                    await asyncio.sleep(poll_interval)
+                                    continue
+                        except Exception as list_error:
+                            logger.warning(f"Error checking task list: {str(list_error)}")
+                    
+                    # Log the HTTP error
+                    error_msg = f"HTTP error polling task status (attempt {consecutive_errors}): {str(e)}"
                     status_updates.append(
                         {
                             "timestamp": current_time,
-                            "message": f"Unknown status: {current_status}, continuing to monitor",
-                            "status": current_status,
+                            "message": error_msg,
+                            "status": "http_error",
+                            "consecutive_errors": consecutive_errors,
                         }
                     )
+                    logger.warning(error_msg)
+                    
+                    # Give up after too many consecutive errors
+                    if consecutive_errors >= max_consecutive_errors:
+                        break
+                    
                     await asyncio.sleep(poll_interval)
 
                 except Exception as e:
+                    consecutive_errors += 1
+                    error_msg = f"Error polling task status (attempt {consecutive_errors}): {str(e)}"
                     status_updates.append(
                         {
                             "timestamp": current_time,
-                            "message": f"Error polling task status: {str(e)}",
+                            "message": error_msg,
                             "status": "error",
+                            "consecutive_errors": consecutive_errors,
                         }
                     )
+                    logger.error(error_msg)
+                    
+                    if consecutive_errors >= max_consecutive_errors:
+                        break
+                    
                     await asyncio.sleep(poll_interval)
 
+            # If we get here, monitoring completed without task finishing
+            current_time = time.time()
+            elapsed = current_time - start_time
+            
+            logger.info(f"30-second monitoring completed for task {task_id}: {poll_count} polls, status: {last_status}")
+            
             return {
-                "monitoring_complete": True,
-                "total_polls": poll_count,
+                "completed": False,
                 "duration_seconds": elapsed,
                 "final_status": last_status,
+                "total_polls": poll_count,
                 "status_updates": status_updates,
+                "summary": f"Task still {last_status or 'running'} after {elapsed:.1f}s of monitoring",
+                "consecutive_errors": consecutive_errors,
             }
 
         except Exception as e:
+            current_time = time.time()
+            elapsed = current_time - start_time
+            
+            error_msg = f"Critical error during startup monitoring: {str(e)}"
+            logger.error(error_msg)
+            
             return {
+                "completed": False,
                 "monitoring_failed": True,
-                "error": str(e),
+                "error": error_msg,
+                "duration_seconds": elapsed,
                 "status_updates": status_updates,
+                "consecutive_errors": consecutive_errors,
             }
 
     async def get_task_raw_output(self, project_id: int, task_id: int) -> str:
