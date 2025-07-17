@@ -109,7 +109,7 @@ class TestMCPServer:
                 projects_list = projects.get("projects", [])
                 if projects_list:  # Ensure list is not empty
                     project_id = projects_list[0]["id"]
-            
+
             if not project_id:
                 pytest.skip("Could not determine project ID")
 
@@ -157,7 +157,7 @@ class TestMCPServer:
                 projects_list = projects.get("projects", [])
                 if projects_list:  # Ensure list is not empty
                     project_id = projects_list[0]["id"]
-            
+
             if not project_id:
                 pytest.skip("Could not determine project ID")
 
@@ -195,7 +195,7 @@ class TestMCPServer:
                 projects_list = projects.get("projects", [])
                 if projects_list:  # Ensure list is not empty
                     project_id = projects_list[0]["id"]
-            
+
             if not project_id:
                 pytest.skip("Could not determine project ID")
 
