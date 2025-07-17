@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "semaphore-mcp"
-version = "0.1.6"
+version = "0.1.7"
 description = "Model Context Protocol (MCP) server for SemaphoreUI automation"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -34,10 +34,6 @@ semaphore-mcp = "semaphore_mcp.scripts.start_server:main"
 line-length = 88
 target-version = "py39"
 
-[tool.pytest.ini_options]
-testpaths = [ "tests",]
-python_files = "test_*.py"
-
 [tool.ruff.lint]
 select = [ "E", "W", "F", "I", "B", "C4", "UP",]
 ignore = [ "E501", "B008",]
@@ -47,6 +43,10 @@ quote-style = "double"
 indent-style = "space"
 skip-magic-trailing-comma = false
 line-ending = "auto"
+
+[tool.pytest.ini_options]
+testpaths = [ "tests",]
+python_files = "test_*.py"
 
 [tool.ruff.lint.isort]
 known-first-party = [ "semaphore_mcp",]
