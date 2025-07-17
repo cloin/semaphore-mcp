@@ -117,32 +117,28 @@ jobs:
           git add pyproject.toml
           git commit -m "Bump version to ${{ inputs.version }}"
 
-      - name: Create and push tag
-        run: |
-          git tag -a "v${{ inputs.version }}" -m "Release v${{ inputs.version }}"
-          git push origin "v${{ inputs.version }}"
-
       - name: Push version commit
         run: |
           git push origin main
 
-      - name: Create GitHub Release
+      - name: Create and push git tag
+        run: |
+          git tag v${{ inputs.version }}
+          git push origin v${{ inputs.version }}
+
+      - name: Create GitHub release
+        uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          PRERELEASE_FLAG=""
-          if [ "${{ inputs.prerelease }}" = "true" ]; then
-            PRERELEASE_FLAG="--prerelease"
-          fi
-          
-          gh release create "v${{ inputs.version }}" \
-            --title "Release v${{ inputs.version }}" \
-            --notes-file release_notes.md \
-            $PRERELEASE_FLAG
+        with:
+          tag_name: v${{ inputs.version }}
+          release_name: Release v${{ inputs.version }}
+          body: ${{ steps.changelog.outputs.release_notes }}
+          draft: false
+          prerelease: ${{ inputs.prerelease }}
 
-      - name: Wait for publish workflow
+      - name: Success message
         run: |
-          echo "✅ Release v${{ inputs.version }} created successfully!"
-          echo "🚀 The publish workflow will automatically trigger and deploy to PyPI"
-          echo "📦 Monitor the 'Publish to PyPI' workflow in the Actions tab"
-          echo "🔗 Release: https://github.com/${{ github.repository }}/releases/tag/v${{ inputs.version }}" 
+          echo "Release v${{ inputs.version }} created successfully!"
+          echo "The PyPI publish workflow will automatically trigger now."
+          echo "Check the Actions tab to monitor the publishing progress." 
