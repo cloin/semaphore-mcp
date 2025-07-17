@@ -5,7 +5,7 @@ This module provides tools for interacting with Semaphore templates.
 """
 
 import logging
-from typing import Any, Dict
+from typing import Any
 
 from .base import BaseTool
 
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 class TemplateTools(BaseTool):
     """Tools for working with Semaphore templates."""
 
-    async def list_templates(self, project_id: int) -> Dict[str, Any]:
+    async def list_templates(self, project_id: int) -> dict[str, Any]:
         """List all templates for a project.
 
         Args:
@@ -30,7 +30,7 @@ class TemplateTools(BaseTool):
         except Exception as e:
             self.handle_error(e, f"listing templates for project {project_id}")
 
-    async def get_template(self, project_id: int, template_id: int) -> Dict[str, Any]:
+    async def get_template(self, project_id: int, template_id: int) -> dict[str, Any]:
         """Get details of a specific template.
 
         Args:
