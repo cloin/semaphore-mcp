@@ -32,8 +32,8 @@ class TestProjectTools:
         # Call the method
         result = await project_tools.list_projects()
 
-        # Verify the result
-        assert result == mock_projects
+        # Verify the result - expect wrapped response
+        assert result == {"projects": mock_projects}
         project_tools.semaphore.list_projects.assert_called_once()
 
     @pytest.mark.asyncio

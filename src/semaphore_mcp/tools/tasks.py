@@ -358,7 +358,8 @@ class TaskTools(BaseTool):
                 if status_code == 400 and environment:
                     error_msg += ". The 400 Bad Request might be related to unsupported environment variables"
                 logger.error(error_msg)
-                raise RuntimeError(error_msg) from None
+                # Don't re-raise, let the outer handler catch the original HTTP error
+                raise http_err
             except Exception as e:
                 logger.error(
                     f"Error running task for template {template_id} in project {project_id}: {str(e)}"

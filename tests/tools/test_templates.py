@@ -33,8 +33,8 @@ class TestTemplateTools:
         # Call the method
         result = await template_tools.list_templates(project_id)
 
-        # Verify the result
-        assert result == mock_templates
+        # Verify the result - expect wrapped response
+        assert result == {"templates": mock_templates}
         template_tools.semaphore.list_templates.assert_called_once_with(project_id)
 
     @pytest.mark.asyncio

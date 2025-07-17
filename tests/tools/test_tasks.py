@@ -237,7 +237,7 @@ class TestTaskTools:
 
         # Verify the error response
         assert "error" in result
-        assert "HTTP error 400" in result["error"]
+        assert "HTTP error while running task" in result["error"]
         assert "http_error" == result["error_type"]
 
     @pytest.mark.asyncio
