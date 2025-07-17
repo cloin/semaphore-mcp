@@ -3,7 +3,7 @@ Tests for the TaskTools class functionality.
 """
 
 import json
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, Mock
 
 import pytest
 import pytest_asyncio
@@ -232,13 +232,13 @@ class TestTaskTools:
         )
         task_tools.semaphore.run_task.side_effect = http_error
 
-        # The method should raise a RuntimeError
-        with pytest.raises(RuntimeError) as excinfo:
-            await task_tools.run_task(template_id, project_id, environment)
+        # The method should return an error response
+        result = await task_tools.run_task(template_id, project_id, environment)
 
-        # Verify the error message
-        assert "HTTP error 400" in str(excinfo.value)
-        assert "environment variables" in str(excinfo.value)
+        # Verify the error response
+        assert "error" in result
+        assert "HTTP error 400" in result["error"]
+        assert "http_error" == result["error_type"]
 
     @pytest.mark.asyncio
     async def test_get_task_output(self, task_tools):
@@ -381,8 +381,8 @@ class TestTaskTools:
         assert "bulk_operations" in result
 
     @pytest.mark.asyncio
-    async def test_run_task_with_monitoring_no_follow(self, task_tools):
-        """Test running a task without monitoring."""
+    async def test_run_task_no_follow(self, task_tools):
+        """Test running a task without monitoring (follow=False)."""
         # Mock task run result
         template_id = 5
         project_id = 1
@@ -395,47 +395,36 @@ class TestTaskTools:
             "project_id": project_id,
         }
 
-        # Mock the enhanced response format from run_task
-        mock_enhanced_result = {
-            "task": mock_task_result,
-            "web_urls": {
-                "task_detail": f"http://localhost:3000/project/{project_id}/history?t={task_id}",
-                "project_tasks": f"http://localhost:3000/project/{project_id}/history"
-            },
-            "message": f"Task #{task_id} started successfully!",
-            "next_steps": "Use the task_detail URL above to monitor progress in SemaphoreUI"
-        }
-
-        # Set up mocks
-        task_tools.run_task = AsyncMock(return_value=mock_enhanced_result)
+        # Mock the semaphore client
+        task_tools.semaphore.run_task = Mock(return_value=mock_task_result)
 
         # Run task without monitoring (follow=False)
-        result = await task_tools.run_task_with_monitoring(
+        result = await task_tools.run_task(
             template_id=template_id,
             project_id=project_id,
             environment=environment,
             follow=False,
         )
 
-        # Verify run_task was called
-        task_tools.run_task.assert_called_once_with(
-            template_id, project_id, environment
+        # Verify semaphore client was called
+        task_tools.semaphore.run_task.assert_called_once_with(
+            project_id, template_id, environment=environment
         )
         
         # Check the result structure for immediate URL response
-        assert "task_started" in result
+        assert "task" in result
         assert "web_urls" in result
         assert "message" in result
         assert "monitoring" in result
-        assert result["task_started"] == mock_task_result
+        assert result["task"] == mock_task_result
         assert result["monitoring"]["enabled"] is False
         assert "task_detail" in result["web_urls"]
         assert "project_tasks" in result["web_urls"]
         assert f"#{task_id}" in result["message"]
 
     @pytest.mark.asyncio
-    async def test_run_task_with_monitoring_follow(self, task_tools):
-        """Test running a task with monitoring."""
+    async def test_run_task_follow(self, task_tools):
+        """Test running a task with monitoring (follow=True)."""
         # Mock task run result
         template_id = 5
         project_id = 1
@@ -446,17 +435,6 @@ class TestTaskTools:
             "id": task_id,
             "status": "waiting", 
             "project_id": project_id,
-        }
-
-        # Mock the enhanced response format from run_task
-        mock_enhanced_result = {
-            "task": mock_task_result,
-            "web_urls": {
-                "task_detail": f"http://localhost:3000/project/{project_id}/history?t={task_id}",
-                "project_tasks": f"http://localhost:3000/project/{project_id}/history"
-            },
-            "message": f"Task #{task_id} started successfully!",
-            "next_steps": "Use the task_detail URL above to monitor progress in SemaphoreUI"
         }
 
         mock_monitoring_result = {
@@ -473,68 +451,53 @@ class TestTaskTools:
         }
 
         # Set up mocks
-        task_tools.run_task = AsyncMock(return_value=mock_enhanced_result)
+        task_tools.semaphore.run_task = Mock(return_value=mock_task_result)
         task_tools._monitor_task_startup = AsyncMock(
             return_value=mock_monitoring_result
         )
 
         # Run task with monitoring (follow=True)
-        result = await task_tools.run_task_with_monitoring(
+        result = await task_tools.run_task(
             template_id=template_id,
             project_id=project_id,
             environment=environment,
             follow=True,
         )
 
-        # Verify run_task and _monitor_task_startup were called
-        task_tools.run_task.assert_called_once_with(
-            template_id, project_id, environment
+        # Verify semaphore client and _monitor_task_startup were called
+        task_tools.semaphore.run_task.assert_called_once_with(
+            project_id, template_id, environment=environment
         )
         task_tools._monitor_task_startup.assert_called_once_with(project_id, task_id)
 
         # Check the result contains both the task and monitoring data
-        assert "task_started" in result
+        assert "task" in result
         assert "web_urls" in result
         assert "monitoring" in result
         assert "message" in result
-        assert result["task_started"] == mock_task_result
+        assert result["task"] == mock_task_result
         assert result["monitoring"] == mock_monitoring_result
         assert "completed successfully" in result["message"]  # Should show completion message
 
     @pytest.mark.asyncio
-    async def test_run_task_with_monitoring_missing_project_id(self, task_tools):
-        """Test monitoring with missing project_id in result."""
-        # Mock task run result without project_id
+    async def test_run_task_project_id_auto_detection_failure(self, task_tools):
+        """Test run_task when project_id auto-detection fails."""
         template_id = 5
-        task_id = 42
 
-        mock_task_result = {"id": task_id, "status": "waiting"}
+        # Mock list_projects to return empty list (no projects found)
+        task_tools.semaphore.list_projects = Mock(return_value=[])
 
-        # Mock the enhanced response format from run_task
-        mock_enhanced_result = {
-            "task": mock_task_result,
-            "web_urls": {
-                "task_detail": f"http://localhost:3000/project/1/history?t={task_id}",
-                "project_tasks": f"http://localhost:3000/project/1/history"
-            },
-            "message": f"Task #{task_id} started successfully!",
-            "next_steps": "Use the task_detail URL above to monitor progress in SemaphoreUI"
-        }
-
-        # Set up mock
-        task_tools.run_task = AsyncMock(return_value=mock_enhanced_result)
-
-        # Run task with monitoring but no project_id
-        result = await task_tools.run_task_with_monitoring(
+        # Run task without providing project_id
+        result = await task_tools.run_task(
             template_id=template_id,
             project_id=None,
-            follow=True,  # Missing project_id
+            follow=False,
         )
 
-        # Should return error
+        # Should return error about project_id determination
         assert "error" in result
-        assert "project ID" in result["error"]
-        assert "original_result" in result
+        assert "Could not determine project_id" in result["error"]
+        assert "unexpected_error" in result["error_type"]
 
     @pytest.mark.asyncio
     async def test_monitor_task_execution_404_fallback(self, task_tools):

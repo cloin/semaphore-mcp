@@ -207,16 +207,25 @@ class TaskTools(BaseTool):
         template_id: int,
         project_id: Optional[int] = None,
         environment: Optional[Dict[str, str]] = None,
+        follow: bool = False,
     ) -> Dict[str, Any]:
-        """Run a task from a template and provide web URL for monitoring.
+        """Run a task from a template with optional 30-second monitoring.
 
         Args:
             template_id: ID of the template to run
             project_id: Optional project ID (if not provided, will attempt to determine from template)
             environment: Optional environment variables for the task as dictionary
+            follow: Enable 30-second monitoring for startup verification (default: False)
 
         Returns:
-            Task run result with web URLs for monitoring
+            Task execution result with immediate web URLs and optional monitoring summary
+            
+        Examples:
+            # Just start the task and get URLs
+            result = await run_task(template_id=5)
+            
+            # Start task with 30-second monitoring and get URLs
+            result = await run_task(template_id=5, follow=True)
         """
         try:
             # If project_id is not provided, we need to find it
@@ -277,26 +286,58 @@ class TaskTools(BaseTool):
                 
                 # Extract task ID for URL generation
                 task_id = task_result.get("id")
-                if task_id:
-                    # Build URLs for immediate access
-                    task_url = self._build_task_url(project_id, task_id)
-                    project_url = self._build_project_tasks_url(project_id)
-                    
-                    # Return enhanced response with URLs
+                if not task_id:
+                    logger.error(f"Task result missing ID field: {task_result}")
                     return {
-                        "task": task_result,
-                        "web_urls": {
-                            "task_detail": task_url,
-                            "project_tasks": project_url
-                        },
-                        "message": f"Task #{task_id} started successfully!",
-                        "next_steps": "Use the task_detail URL above to monitor progress in SemaphoreUI"
+                        "error": "Could not extract task ID for URL generation",
+                        "original_result": task_result,
+                        "suggestion": "Check if the task was created successfully"
                     }
+
+                # Build URLs for immediate access
+                task_url = self._build_task_url(project_id, task_id)
+                project_url = self._build_project_tasks_url(project_id)
+
+                # Prepare base response with immediate URL access
+                response = {
+                    "task": task_result,
+                    "web_urls": {
+                        "task_detail": task_url,
+                        "project_tasks": project_url
+                    },
+                    "message": f"Task #{task_id} started successfully!",
+                    "next_steps": "Use the task_detail URL above to monitor progress in SemaphoreUI"
+                }
+
+                # If follow is False, return immediately with URLs
+                if not follow:
+                    response["monitoring"] = {
+                        "enabled": False,
+                        "message": "Use the web URL above to monitor task progress"
+                    }
+                    return response
+
+                # If follow is True, do 30-second smart monitoring
+                logger.info(f"Starting 30-second monitoring for task {task_id} in project {project_id}")
+                
+                monitoring_result = await self._monitor_task_startup(project_id, task_id)
+                
+                response["monitoring"] = monitoring_result
+                
+                # Update the message based on monitoring results
+                if monitoring_result.get("completed"):
+                    final_status = monitoring_result.get("final_status")
+                    if final_status in ["success", "successful"]:
+                        response["message"] = f"Task #{task_id} completed successfully!"
+                    elif final_status in ["error", "failed"]:
+                        response["message"] = f"Task #{task_id} failed. Check logs via the URL above."
+                    else:
+                        response["message"] = f"Task #{task_id} finished with status: {final_status}"
                 else:
-                    # Fallback if no task ID available
-                    logger.warning("Task result missing ID field, returning raw result")
-                    return task_result
-                    
+                    response["message"] = f"Task #{task_id} is still running. Use the URL above for live progress."
+
+                return response
+
             except requests.exceptions.HTTPError as http_err:
                 status_code = (
                     http_err.response.status_code
@@ -316,11 +357,31 @@ class TaskTools(BaseTool):
                     f"Error running task for template {template_id} in project {project_id}: {str(e)}"
                 )
                 raise RuntimeError(f"Error running task: {str(e)}")
+
+        except requests.exceptions.ConnectionError as e:
+            error_msg = f"Connection error while running task: {str(e)}"
+            logger.error(error_msg)
+            return {
+                "error": error_msg,
+                "error_type": "connection_error",
+                "suggestion": "Check if SemaphoreUI is running and accessible"
+            }
+        except requests.exceptions.HTTPError as e:
+            error_msg = f"HTTP error while running task: {str(e)}"
+            logger.error(error_msg)
+            return {
+                "error": error_msg,
+                "error_type": "http_error",
+                "suggestion": "Check API credentials and template permissions"
+            }
         except Exception as e:
-            logger.error(
-                f"Error in project/template lookup for template {template_id}: {str(e)}"
-            )
-            raise RuntimeError(f"Error preparing to run task: {str(e)}")
+            error_msg = f"Unexpected error running task for template {template_id}: {str(e)}"
+            logger.error(error_msg)
+            return {
+                "error": error_msg,
+                "error_type": "unexpected_error",
+                "suggestion": "Check logs for more details"
+            }
 
     async def get_task_output(self, project_id: int, task_id: int) -> str:
         """Get output from a completed task.
@@ -549,134 +610,7 @@ class TaskTools(BaseTool):
         except Exception as e:
             self.handle_error(e, f"bulk restarting tasks for project {project_id}")
 
-    async def run_task_with_monitoring(
-        self,
-        template_id: int,
-        project_id: Optional[int] = None,
-        environment: Optional[Dict[str, str]] = None,
-        follow: bool = False,
-    ) -> Dict[str, Any]:
-        """Run a task and provide immediate web URL with optional 30-second monitoring.
 
-        Args:
-            template_id: ID of the template to run
-            project_id: Optional project ID
-            environment: Optional environment variables
-            follow: Enable 30-second monitoring for startup verification (default: False)
-
-        Returns:
-            Task execution result with immediate web URL and optional monitoring summary
-            
-        Examples:
-            # Just start the task and get the URL
-            result = await run_task_with_monitoring(template_id=5)
-            
-            # Start task with 30-second monitoring
-            result = await run_task_with_monitoring(template_id=5, follow=True)
-        """
-        try:
-            # Start the task using existing run_task method
-            task_result = await self.run_task(template_id, project_id, environment)
-
-            # Handle the new enhanced response format from run_task
-            if "task" in task_result:
-                # New format with URLs already included
-                actual_task = task_result["task"]
-                existing_urls = task_result.get("web_urls", {})
-            else:
-                # Fallback for raw task result (shouldn't happen with updated run_task)
-                actual_task = task_result
-                existing_urls = {}
-
-            # Extract task and project IDs
-            task_id = actual_task.get("id")
-            if not task_id:
-                logger.error(f"Task result missing ID field: {actual_task}")
-                return {
-                    "error": "Could not extract task ID for URL generation",
-                    "original_result": task_result,
-                    "suggestion": "Check if the task was created successfully"
-                }
-
-            # Determine project_id if not provided
-            if not project_id:
-                project_id = actual_task.get("project_id")
-                if not project_id:
-                    logger.error(f"Could not determine project_id from task result: {actual_task}")
-                    return {
-                        "error": "Could not determine project ID for URL generation",
-                        "original_result": task_result,
-                        "suggestion": "Provide project_id parameter explicitly"
-                    }
-
-            # Build URLs (reuse existing ones if available)
-            task_url = existing_urls.get("task_detail") or self._build_task_url(project_id, task_id)
-            project_url = existing_urls.get("project_tasks") or self._build_project_tasks_url(project_id)
-
-            # Prepare the base response with immediate URL access
-            response = {
-                "task_started": actual_task,
-                "web_urls": {
-                    "task_detail": task_url,
-                    "project_tasks": project_url
-                },
-                "message": f"Task #{task_id} started successfully!",
-                "next_steps": "Use the task_detail URL above to monitor progress in real-time"
-            }
-
-            # If follow is False, return immediately with URLs
-            if not follow:
-                response["monitoring"] = {
-                    "enabled": False,
-                    "message": "Use the web URL above to monitor task progress"
-                }
-                return response
-
-            # If follow is True, do 30-second smart monitoring
-            logger.info(f"Starting 30-second monitoring for task {task_id} in project {project_id}")
-            
-            monitoring_result = await self._monitor_task_startup(project_id, task_id)
-            
-            response["monitoring"] = monitoring_result
-            
-            # Update the message based on monitoring results
-            if monitoring_result.get("completed"):
-                final_status = monitoring_result.get("final_status")
-                if final_status in ["success", "successful"]:
-                    response["message"] = f"Task #{task_id} completed successfully!"
-                elif final_status in ["error", "failed"]:
-                    response["message"] = f"Task #{task_id} failed. Check logs via the URL above."
-                else:
-                    response["message"] = f"Task #{task_id} finished with status: {final_status}"
-            else:
-                response["message"] = f"Task #{task_id} is still running. Use the URL above for live progress."
-
-            return response
-
-        except requests.exceptions.ConnectionError as e:
-            error_msg = f"Connection error while running task with monitoring: {str(e)}"
-            logger.error(error_msg)
-            return {
-                "error": error_msg,
-                "error_type": "connection_error",
-                "suggestion": "Check if SemaphoreUI is running and accessible"
-            }
-        except requests.exceptions.HTTPError as e:
-            error_msg = f"HTTP error while running task with monitoring: {str(e)}"
-            logger.error(error_msg)
-            return {
-                "error": error_msg,
-                "error_type": "http_error",
-                "suggestion": "Check API credentials and template permissions"
-            }
-        except Exception as e:
-            error_msg = f"Unexpected error running task with monitoring for template {template_id}: {str(e)}"
-            logger.error(error_msg)
-            return {
-                "error": error_msg,
-                "error_type": "unexpected_error",
-                "suggestion": "Check logs for more details"
-            }
 
     async def _monitor_task_startup(self, project_id: int, task_id: int) -> Dict[str, Any]:
         """Monitor task for 30 seconds to catch quick completions and startup issues.
