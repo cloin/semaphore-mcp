@@ -154,7 +154,9 @@ class TestTaskToolsCoverage:
 
         task_tools.semaphore.run_task.side_effect = http_error
 
-        result = await task_tools.run_task(5, project_id=1, environment={"VAR": "value"})
+        result = await task_tools.run_task(
+            5, project_id=1, environment={"VAR": "value"}
+        )
         assert "error" in result
         assert "HTTP error" in result["error"]
 
