@@ -108,7 +108,7 @@ class TestTaskToolsCoverage:
 
         result = await task_tools.run_task(5)
 
-        assert result["id"] == 10
+        assert result["task"]["id"] == 10
 
     @pytest.mark.asyncio
     async def test_run_task_template_not_found(self, task_tools):
@@ -117,8 +117,9 @@ class TestTaskToolsCoverage:
         task_tools.semaphore.list_projects.return_value = [{"id": 1, "name": "test"}]
         task_tools.semaphore.list_templates.return_value = [{"id": 99, "name": "other"}]
 
-        with pytest.raises(RuntimeError, match="Could not determine project_id"):
-            await task_tools.run_task(5)
+        result = await task_tools.run_task(5)
+        assert "error" in result
+        assert "Could not determine project_id" in result["error"]
 
     @pytest.mark.asyncio
     async def test_run_task_template_lookup_error(self, task_tools):
@@ -139,7 +140,7 @@ class TestTaskToolsCoverage:
 
         # Should continue and find template in project 2
         result = await task_tools.run_task(5)
-        assert result["id"] == 10
+        assert result["task"]["id"] == 10
 
     @pytest.mark.asyncio
     async def test_run_task_http_400_error(self, task_tools):
@@ -153,8 +154,9 @@ class TestTaskToolsCoverage:
 
         task_tools.semaphore.run_task.side_effect = http_error
 
-        with pytest.raises(RuntimeError, match="HTTP error 400"):
-            await task_tools.run_task(5, project_id=1, environment={"VAR": "value"})
+        result = await task_tools.run_task(5, project_id=1, environment={"VAR": "value"})
+        assert "error" in result
+        assert "HTTP error" in result["error"]
 
     @pytest.mark.asyncio
     async def test_run_task_http_error_no_response(self, task_tools):
@@ -165,16 +167,18 @@ class TestTaskToolsCoverage:
         http_error = requests.exceptions.HTTPError("Network error")
         task_tools.semaphore.run_task.side_effect = http_error
 
-        with pytest.raises(RuntimeError, match="HTTP error unknown"):
-            await task_tools.run_task(5, project_id=1)
+        result = await task_tools.run_task(5, project_id=1)
+        assert "error" in result
+        assert "HTTP error" in result["error"]
 
     @pytest.mark.asyncio
     async def test_run_task_general_error(self, task_tools):
         """Test run_task when general error occurs."""
         task_tools.semaphore.run_task.side_effect = Exception("General error")
 
-        with pytest.raises(RuntimeError, match="Error running task"):
-            await task_tools.run_task(5, project_id=1)
+        result = await task_tools.run_task(5, project_id=1)
+        assert "error" in result
+        assert "Unexpected error" in result["error"]
 
     @pytest.mark.asyncio
     async def test_filter_tasks_with_last_tasks_fallback(self, task_tools):

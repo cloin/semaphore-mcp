@@ -332,6 +332,21 @@ This approach allows for easy extension with new tools as needed. Check the `ser
 
 ## 🔧 Troubleshooting
 
+### GitHub Actions CI/CD Setup
+
+If you're contributing to this project and GitHub Actions tests are failing, ensure the repository has the following secrets configured:
+
+**Required Secrets:**
+- `ADMIN_USERNAME`: SemaphoreUI admin username (e.g., "admin")  
+- `ADMIN_PASSWORD`: SemaphoreUI admin password (e.g., "admin123")
+
+**To configure secrets:**
+1. Go to your repository's Settings > Secrets and variables > Actions
+2. Add the required secrets with appropriate values
+3. The GitHub Actions workflow will use these to authenticate with the test SemaphoreUI instance
+
+**Note:** These secrets are only needed for running the full integration tests in CI. Local development can use environment variables or `.env` files.
+
 ### Common Issues
 
 **Connection refused to SemaphoreUI**

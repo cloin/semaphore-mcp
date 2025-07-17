@@ -46,8 +46,8 @@ class TestEnvironmentTools:
         # Call the method
         result = await environment_tools.list_environments(project_id)
 
-        # Verify the result
-        assert result == mock_environments
+        # Verify the result - expect wrapped response
+        assert result == {"environments": mock_environments}
         environment_tools.semaphore.list_environments.assert_called_once_with(
             project_id
         )
@@ -170,8 +170,8 @@ class TestEnvironmentTools:
         # Call the method
         result = await environment_tools.list_inventory(project_id)
 
-        # Verify the result
-        assert result == mock_inventory
+        # Verify the result - expect wrapped response
+        assert result == {"inventory": mock_inventory}
         environment_tools.semaphore.list_inventory.assert_called_once_with(project_id)
 
     @pytest.mark.asyncio

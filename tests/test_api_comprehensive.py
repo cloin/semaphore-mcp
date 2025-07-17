@@ -166,10 +166,12 @@ class TestSemaphoreAPIClientComprehensive:
 
     def test_get_task_raw_output(self, mock_client):
         """Test get_task_raw_output method."""
-        mock_response = {"raw_output": "raw task output"}
-        with patch.object(mock_client, "_request", return_value=mock_response):
+        mock_response = Mock()
+        mock_response.text = "raw task output"
+        mock_response.raise_for_status.return_value = None
+        with patch.object(mock_client.session, "request", return_value=mock_response):
             result = mock_client.get_task_raw_output(1, 1)
-            assert result == mock_response
+            assert result == "raw task output"
 
     def test_delete_task(self, mock_client):
         """Test delete_task method."""
