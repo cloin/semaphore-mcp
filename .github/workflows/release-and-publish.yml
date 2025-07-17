@@ -1,4 +1,4 @@
-name: Create Release
+name: Release and Publish
 
 on:
   workflow_dispatch:
@@ -27,8 +27,11 @@ jobs:
   release:
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # Required to create releases and push tags
-      pull-requests: write  # Required to create PRs if needed
+      contents: write
+      pull-requests: write
+    
+    outputs:
+      release_tag: v${{ inputs.version }}
     
     steps:
       - name: Checkout repository
@@ -137,8 +140,75 @@ jobs:
           draft: false
           prerelease: ${{ inputs.prerelease }}
 
+  build:
+    name: Build distribution
+    needs: [release]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.release.outputs.release_tag }}
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          
+      - name: Install build dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install build
+        
+      - name: Build package
+        run: python -m build
+        
+      - name: Store the distribution packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/
+
+  publish-to-testpypi:
+    name: Publish to TestPyPI
+    needs: [build]
+    runs-on: ubuntu-latest
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/p/semaphore-mcp
+    permissions:
+      id-token: write
+    steps:
+      - name: Download all the dists
+        uses: actions/download-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/
+          
+      - name: Publish distribution to TestPyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+
+  publish-to-pypi:
+    name: Publish to PyPI
+    needs: [build, publish-to-testpypi]
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/semaphore-mcp
+    permissions:
+      id-token: write
+    steps:
+      - name: Download all the dists
+        uses: actions/download-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/
+          
+      - name: Publish distribution to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+
       - name: Success message
         run: |
-          echo "Release v${{ inputs.version }} created successfully!"
-          echo "The PyPI publish workflow will automatically trigger now."
-          echo "Check the Actions tab to monitor the publishing progress." 
+          echo "Release completed successfully!"
+          echo "Published to both TestPyPI and PyPI, and created GitHub release." 
