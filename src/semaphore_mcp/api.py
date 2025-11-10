@@ -312,7 +312,9 @@ class SemaphoreAPIClient:
 
     def get_repository(self, project_id: int, repository_id: int) -> dict[str, Any]:
         """Get a repository by ID."""
-        return self._request("GET", f"project/{project_id}/repositories/{repository_id}")
+        return self._request(
+            "GET", f"project/{project_id}/repositories/{repository_id}"
+        )
 
     def create_repository(
         self,
@@ -383,11 +385,11 @@ class SemaphoreAPIClient:
             "PUT", f"project/{project_id}/repositories/{repository_id}", json=payload
         )
 
-    def delete_repository(
-        self, project_id: int, repository_id: int
-    ) -> dict[str, Any]:
+    def delete_repository(self, project_id: int, repository_id: int) -> dict[str, Any]:
         """Delete a repository by ID."""
-        return self._request("DELETE", f"project/{project_id}/repositories/{repository_id}")
+        return self._request(
+            "DELETE", f"project/{project_id}/repositories/{repository_id}"
+        )
 
 
 # Convenience factory function
