@@ -77,7 +77,9 @@ class RepositoryTools(BaseTool):
                 project_id, name, git_url, git_branch, ssh_key_id
             )
         except Exception as e:
-            self.handle_error(e, f"creating repository '{name}' in project {project_id}")
+            self.handle_error(
+                e, f"creating repository '{name}' in project {project_id}"
+            )
 
     async def update_repository(
         self,
