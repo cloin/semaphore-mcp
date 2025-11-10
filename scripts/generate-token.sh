@@ -74,7 +74,7 @@ if [ -z "$FULL_TOKEN" ] || [ "$FULL_TOKEN" = "null" ]; then
     -H 'Content-Type: application/json' \
     -d "{\"auth\": \"$ADMIN_USER\", \"password\": \"$ADMIN_PASS\"}" \
     $SEMAPHORE_URL/api/auth/login | jq -r '.token')
-    
+
   if [ -n "$FULL_TOKEN" ] && [ "$FULL_TOKEN" != "null" ]; then
     echo "Alternative method succeeded"
   else

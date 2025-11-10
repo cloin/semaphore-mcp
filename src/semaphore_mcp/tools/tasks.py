@@ -331,17 +331,17 @@ class TaskTools(BaseTool):
                     if final_status in ["success", "successful"]:
                         response["message"] = f"Task #{task_id} completed successfully!"
                     elif final_status in ["error", "failed"]:
-                        response["message"] = (
-                            f"Task #{task_id} failed. Check logs via the URL above."
-                        )
+                        response[
+                            "message"
+                        ] = f"Task #{task_id} failed. Check logs via the URL above."
                     else:
-                        response["message"] = (
-                            f"Task #{task_id} finished with status: {final_status}"
-                        )
+                        response[
+                            "message"
+                        ] = f"Task #{task_id} finished with status: {final_status}"
                 else:
-                    response["message"] = (
-                        f"Task #{task_id} is still running. Use the URL above for live progress."
-                    )
+                    response[
+                        "message"
+                    ] = f"Task #{task_id} is still running. Use the URL above for live progress."
 
                 return response
 

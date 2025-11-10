@@ -12,26 +12,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
           cache: 'pip'
-          
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install ruff mypy
           pip install -r requirements.txt
           pip install -e .
-          
+
       - name: Run ruff linter
         run: ruff check src tests
-        
+
       - name: Run ruff formatter check
         run: ruff format --check src tests
-        
+
       - name: Run mypy type checker
         run: mypy src --ignore-missing-imports --disable-error-code=import-untyped
 
@@ -43,16 +43,16 @@ jobs:
       matrix:
         python-version: ['3.10', '3.11', '3.12']
       fail-fast: false
-    
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           cache: 'pip'
-          
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -60,9 +60,9 @@ jobs:
           pip install -e .
           # Install additional test dependencies
           pip install pytest-cov pytest-xvfb
-          
+
       # Docker is pre-installed on GitHub Actions runners, so no installation needed
-      
+
       - name: Cache Docker images
         id: cache-docker
         uses: actions/cache@v4
@@ -72,7 +72,7 @@ jobs:
           restore-keys: |
             docker-${{ runner.os }}-semaphoreui-
             docker-${{ runner.os }}-
-          
+
       - name: Set up Docker cache
         if: steps.cache-docker.outputs.cache-hit != 'true'
         run: |
@@ -80,14 +80,14 @@ jobs:
           mkdir -p /tmp/docker-registry
           docker pull semaphoreui/semaphore:latest
           docker save semaphoreui/semaphore:latest > /tmp/docker-registry/semaphoreui-image.tar
-        
+
       - name: Load cached Docker image
         if: steps.cache-docker.outputs.cache-hit == 'true'
         run: |
           echo "Loading Docker image from cache..."
           docker load < /tmp/docker-registry/semaphoreui-image.tar
           docker images
-      
+
       - name: Start SemaphoreUI container
         run: |
           docker run -d \
@@ -100,40 +100,40 @@ jobs:
             -e SEMAPHORE_ADMIN=admin \
             -v semaphore-data:/etc/semaphore \
             semaphoreui/semaphore:latest
-          
+
           # Give SemaphoreUI time to start up
           echo "Waiting for SemaphoreUI to start..."
           sleep 15
-          
+
       - name: Verify SemaphoreUI is running
         run: |
           # Check if the container is running
           docker ps | grep semaphore-dev
-          
+
           # Check if the service is responding
           curl -f http://localhost:3000/api/ping || curl -f http://localhost:3000/ || echo "SemaphoreUI might not be fully ready yet"
-          
+
       - name: Generate API token
         id: generate-semaphore-token
         run: |
           # Make the script executable
           chmod +x scripts/generate-token.sh
-          
+
           # Run the script to generate the token with secrets as arguments
           scripts/generate-token.sh "$ADMIN_USERNAME" "$ADMIN_PASSWORD"
         env:
           ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
           ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
-               
+
       - name: Run tests with coverage
         run: |
           # Make sure to use the token from the previous step
           export SEMAPHORE_API_TOKEN="${{ steps.generate-semaphore-token.outputs.token }}"
-          
+
           # Debug token info
           echo "Token length: ${#SEMAPHORE_API_TOKEN}"
           echo "Token starts with: ${SEMAPHORE_API_TOKEN:0:20}..."
-          
+
           # Verify we have a token before running tests
           if [ -z "$SEMAPHORE_API_TOKEN" ]; then
             echo "Error: No API token available - tests will fail"
@@ -141,22 +141,22 @@ jobs:
           else
             echo "API token is available - running tests"
           fi
-          
+
           # Create a .env file with the token for pytest
           echo "SEMAPHORE_URL=http://localhost:3000" > .env
           echo "SEMAPHORE_API_TOKEN=$SEMAPHORE_API_TOKEN" >> .env
-          
+
           # Show .env file for debugging (without revealing full token)
           echo "Contents of .env file:"
-          cat .env | sed 's/\(SEMAPHORE_API_TOKEN=\)\(.*\)/\1\2.../' 
-          
+          cat .env | sed 's/\(SEMAPHORE_API_TOKEN=\)\(.*\)/\1\2.../'
+
           # Run tests with coverage reporting and verbose output
           pytest tests/ -v --cov=src/semaphore_mcp --cov-report=term-missing --cov-report=xml --cov-fail-under=80
         env:
           SEMAPHORE_URL: http://localhost:3000
           # Use the token from previous step
           SEMAPHORE_API_TOKEN: ${{ steps.generate-semaphore-token.outputs.token }}
-      
+
       - name: Upload coverage reports
         uses: codecov/codecov-action@v4
         if: always()
@@ -165,13 +165,13 @@ jobs:
           flags: unittests
           name: codecov-umbrella
           fail_ci_if_error: false
-          
+
       - name: Test summary
         if: always()
         run: |
           echo "Test execution completed"
           echo "Total tests collected: $(python3 -m pytest tests/ --collect-only -q | grep "test session starts" -A 50 | grep "collected" | sed 's/.*collected \([0-9]*\) item.*/\1/' || echo 'unknown')"
-          
+
       - name: Cleanup
         if: always()
         run: |
@@ -185,42 +185,42 @@ jobs:
     strategy:
       matrix:
         python-version: ['3.10', '3.11', '3.12']
-    
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      
+
       - name: Build package
         run: |
           python -m pip install --upgrade pip build
           python -m build
-      
+
       - name: Test package installation
         run: |
           # Create fresh environment
           python -m venv test-env
           source test-env/bin/activate
-          
+
           # Install built package
           pip install dist/*.whl
-          
+
           # Test console script works
           semaphore-mcp --help
-          
+
           # Test import works
           python -c "from semaphore_mcp import server; print('Import successful')"
-      
+
       - name: Test package functionality
         run: |
           source test-env/bin/activate
-          
+
           # Test with mock config (without real SemaphoreUI)
           export SEMAPHORE_URL=http://mock:3000
           export SEMAPHORE_API_TOKEN=mock-token
-          
+
           # This should fail gracefully with connection error, not import error
           timeout 10s semaphore-mcp --verbose || echo "Expected connection failure - package works"
