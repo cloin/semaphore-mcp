@@ -94,4 +94,4 @@ git push origin v0.1.6
 - **Traceability**: Clear commit history and release notes
 - **Speed**: One-click releases from anywhere
 
-Happy releasing! 🎉 
+Happy releasing! 🎉
