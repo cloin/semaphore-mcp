@@ -304,6 +304,93 @@ class SemaphoreAPIClient:
         """Delete an inventory item by ID."""
         return self._request("DELETE", f"project/{project_id}/inventory/{inventory_id}")
 
+    # Repository endpoints
+    def list_repositories(self, project_id: int) -> list[dict[str, Any]]:
+        """List all repositories for a project."""
+        result = self._request("GET", f"project/{project_id}/repositories")
+        return result if isinstance(result, list) else []
+
+    def get_repository(self, project_id: int, repository_id: int) -> dict[str, Any]:
+        """Get a repository by ID."""
+        return self._request(
+            "GET", f"project/{project_id}/repositories/{repository_id}"
+        )
+
+    def create_repository(
+        self,
+        project_id: int,
+        name: str,
+        git_url: str,
+        git_branch: str,
+        ssh_key_id: int,
+    ) -> dict[str, Any]:
+        """Create a new repository for a project.
+
+        Args:
+            project_id: Project ID
+            name: Repository name
+            git_url: Git repository URL
+            git_branch: Git branch to use
+            ssh_key_id: SSH key ID for authentication
+
+        Returns:
+            Created repository information
+        """
+        payload = {
+            "project_id": project_id,
+            "name": name,
+            "git_url": git_url,
+            "git_branch": git_branch,
+            "ssh_key_id": ssh_key_id,
+        }
+
+        return self._request("POST", f"project/{project_id}/repositories", json=payload)
+
+    def update_repository(
+        self,
+        project_id: int,
+        repository_id: int,
+        name: Optional[str] = None,
+        git_url: Optional[str] = None,
+        git_branch: Optional[str] = None,
+        ssh_key_id: Optional[int] = None,
+    ) -> dict[str, Any]:
+        """Update an existing repository.
+
+        Args:
+            project_id: Project ID
+            repository_id: Repository ID
+            name: Repository name (optional)
+            git_url: Git repository URL (optional)
+            git_branch: Git branch to use (optional)
+            ssh_key_id: SSH key ID for authentication (optional)
+
+        Returns:
+            Updated repository information
+        """
+        # Include project_id and repository_id in payload to match SemaphoreUI API requirements
+        payload: dict[str, Any] = {"id": repository_id, "project_id": project_id}
+
+        # Only update what's specified
+        if name is not None:
+            payload["name"] = name
+        if git_url is not None:
+            payload["git_url"] = git_url
+        if git_branch is not None:
+            payload["git_branch"] = git_branch
+        if ssh_key_id is not None:
+            payload["ssh_key_id"] = ssh_key_id
+
+        return self._request(
+            "PUT", f"project/{project_id}/repositories/{repository_id}", json=payload
+        )
+
+    def delete_repository(self, project_id: int, repository_id: int) -> dict[str, Any]:
+        """Delete a repository by ID."""
+        return self._request(
+            "DELETE", f"project/{project_id}/repositories/{repository_id}"
+        )
+
 
 # Convenience factory function
 def create_client(
