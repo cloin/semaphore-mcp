@@ -14,6 +14,7 @@ from .api import create_client
 from .config import configure_logging, get_config
 from .tools.environments import EnvironmentTools
 from .tools.projects import ProjectTools
+from .tools.repositories import RepositoryTools
 from .tools.tasks import TaskTools
 from .tools.templates import TemplateTools
 
@@ -48,6 +49,7 @@ class SemaphoreMCPServer:
         self.template_tools = TemplateTools(self.semaphore)
         self.task_tools = TaskTools(self.semaphore)
         self.environment_tools = EnvironmentTools(self.semaphore)
+        self.repository_tools = RepositoryTools(self.semaphore)
 
         # Register tools
         self.register_tools()
@@ -97,6 +99,13 @@ class SemaphoreMCPServer:
         self.mcp.tool()(self.environment_tools.create_inventory)
         self.mcp.tool()(self.environment_tools.update_inventory)
         self.mcp.tool()(self.environment_tools.delete_inventory)
+
+        # Repository tools
+        self.mcp.tool()(self.repository_tools.list_repositories)
+        self.mcp.tool()(self.repository_tools.get_repository)
+        self.mcp.tool()(self.repository_tools.create_repository)
+        self.mcp.tool()(self.repository_tools.update_repository)
+        self.mcp.tool()(self.repository_tools.delete_repository)
 
     # Tool methods have been moved to dedicated tool classes
 
