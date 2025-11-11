@@ -67,9 +67,9 @@ class TestMCPServer:
             result = await server.project_tools.list_projects()
 
             # Verify we got a successful response
-            assert isinstance(result, dict) or isinstance(
-                result, list
-            ), "Expected result to be a dict or list"
+            assert isinstance(result, dict) or isinstance(result, list), (
+                "Expected result to be a dict or list"
+            )
 
             # We should at least have an empty list if no projects exist
             if isinstance(result, list):
@@ -77,9 +77,9 @@ class TestMCPServer:
                 pass
             else:
                 # Ensure we have some expected keys in the response
-                assert any(
-                    key in result for key in ["id", "projects", "items"]
-                ), "Expected project data not found in response"
+                assert any(key in result for key in ["id", "projects", "items"]), (
+                    "Expected project data not found in response"
+                )
         except Exception as e:
             pytest.fail(f"Tool execution failed: {str(e)}")
 
@@ -124,17 +124,17 @@ class TestMCPServer:
             assert "note" in result, "Expected 'note' key in response"
 
             # Verify limit is enforced
-            assert (
-                len(result["tasks"]) <= 5
-            ), "Expected at most 5 tasks with default limit"
+            assert len(result["tasks"]) <= 5, (
+                "Expected at most 5 tasks with default limit"
+            )
 
             # Verify shown and total counts
-            assert result["shown"] == len(
-                result["tasks"]
-            ), "'shown' count should match actual tasks returned"
-            assert (
-                result["total"] >= result["shown"]
-            ), "'total' should be at least 'shown'"
+            assert result["shown"] == len(result["tasks"]), (
+                "'shown' count should match actual tasks returned"
+            )
+            assert result["total"] >= result["shown"], (
+                "'total' should be at least 'shown'"
+            )
 
         except Exception as e:
             pytest.fail(f"Test failed: {str(e)}")
@@ -170,9 +170,9 @@ class TestMCPServer:
             assert "tasks" in result, "Expected 'tasks' key in response"
 
             # Verify custom limit is enforced
-            assert (
-                len(result["tasks"]) <= custom_limit
-            ), f"Expected at most {custom_limit} tasks"
+            assert len(result["tasks"]) <= custom_limit, (
+                f"Expected at most {custom_limit} tasks"
+            )
 
         except Exception as e:
             pytest.fail(f"Test failed: {str(e)}")
@@ -206,9 +206,9 @@ class TestMCPServer:
             assert isinstance(result, dict), "Expected result to be a dict"
 
             # Should either have a task or a message saying no failed tasks
-            assert (
-                "task" in result or "message" in result
-            ), "Expected 'task' or 'message' key in response"
+            assert "task" in result or "message" in result, (
+                "Expected 'task' or 'message' key in response"
+            )
 
             # If there's a task, verify it has expected fields
             if "task" in result:
@@ -219,9 +219,9 @@ class TestMCPServer:
 
             # If there's a message, verify it
             if "message" in result:
-                assert (
-                    "No failed tasks found" in result["message"]
-                ), "Message should indicate no failed tasks found"
+                assert "No failed tasks found" in result["message"], (
+                    "Message should indicate no failed tasks found"
+                )
 
         except Exception as e:
             pytest.fail(f"Test failed: {str(e)}")
