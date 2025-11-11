@@ -37,7 +37,7 @@ Perfect for DevOps teams who want to leverage AI for infrastructure management w
 - **Routine Operations**: "Deploy the latest version to staging and run the smoke tests"
 - **Infrastructure Scaling**: "Add the new servers to our production inventory and update the load balancer config"
 
-### For Platform Teams  
+### For Platform Teams
 - **Self-Service**: Enable developers to deploy to staging environments through conversational AI
 - **Monitoring**: Get intelligent summaries of deployment status and failure patterns
 - **Compliance**: Ensure deployment procedures are followed consistently
@@ -56,7 +56,7 @@ Once connected to an AI assistant, you can perform complex automation tasks thro
 - "Execute the server update template and monitor progress"
 - "Show me all failed deployments from the last week"
 
-### Infrastructure Management  
+### Infrastructure Management
 - "Create a new environment for staging with these variables"
 - "List all running tasks and stop any that are failing"
 - "Analyze the last deployment failure and suggest fixes"
@@ -145,7 +145,7 @@ Add this configuration:
       "command": "semaphore-mcp",
       "args": [],
       "env": {
-        "SEMAPHORE_URL": "http://localhost:3000", 
+        "SEMAPHORE_URL": "http://localhost:3000",
         "SEMAPHORE_API_TOKEN": "your-token-here"
       }
     }
@@ -245,7 +245,7 @@ The FastMCP server registers the following tools for interacting with SemaphoreU
 2. Stream real-time progress updates
 3. Notify you of completion status
 4. If it fails, automatically analyze the failure
-ove to 
+ove to
 ### Example 4: Infrastructure Inventory Management
 
 **You say to Claude:**
@@ -337,7 +337,7 @@ This approach allows for easy extension with new tools as needed. Check the `ser
 If you're contributing to this project and GitHub Actions tests are failing, ensure the repository has the following secrets configured:
 
 **Required Secrets:**
-- `ADMIN_USERNAME`: SemaphoreUI admin username (e.g., "admin")  
+- `ADMIN_USERNAME`: SemaphoreUI admin username (e.g., "admin")
 - `ADMIN_PASSWORD`: SemaphoreUI admin password (e.g., "admin123")
 
 **To configure secrets:**
