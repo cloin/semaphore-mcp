@@ -59,10 +59,17 @@ class SemaphoreMCPServer:
         # Project tools
         self.mcp.tool()(self.project_tools.list_projects)
         self.mcp.tool()(self.project_tools.get_project)
+        self.mcp.tool()(self.project_tools.create_project)
+        self.mcp.tool()(self.project_tools.update_project)
+        self.mcp.tool()(self.project_tools.delete_project)
 
         # Template tools
         self.mcp.tool()(self.template_tools.list_templates)
         self.mcp.tool()(self.template_tools.get_template)
+        self.mcp.tool()(self.template_tools.create_template)
+        self.mcp.tool()(self.template_tools.update_template)
+        self.mcp.tool()(self.template_tools.delete_template)
+        self.mcp.tool()(self.template_tools.stop_all_template_tasks)
 
         # Task tools
         self.mcp.tool()(self.task_tools.list_tasks)
