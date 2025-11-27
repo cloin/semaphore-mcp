@@ -135,7 +135,7 @@ Once connected, you can interact with SemaphoreUI through natural conversation:
 
 **Templates:** `list_templates`, `get_template`, `create_template`, `update_template`, `delete_template`
 
-**Tasks:** `list_tasks`, `get_task`, `run_task`, `stop_task`, `get_task_output`, `get_task_raw_output`, `filter_tasks`, `bulk_stop_tasks`
+**Tasks:** `list_tasks`, `get_task`, `run_task`, `stop_task`, `get_task_raw_output`, `filter_tasks`, `bulk_stop_tasks`
 
 **Analysis:** `analyze_task_failure`, `bulk_analyze_failures`, `get_latest_failed_task`
 
