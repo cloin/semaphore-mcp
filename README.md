@@ -167,4 +167,6 @@ For local development, Python installation, testing, and contributing, see [DEVE
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details.
+This project is licensed under the GNU Affero General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
+
+**Note:** Versions prior to 1.0.0 were released under the MIT License.
