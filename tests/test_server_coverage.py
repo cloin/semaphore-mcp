@@ -80,9 +80,12 @@ class TestSemaphoreMCPServerCoverage:
         with patch.object(server.mcp, "run") as mock_run:
             server.run()
 
-            mock_logger.info.assert_called_once_with(
+            # Check that both log messages were called
+            assert mock_logger.info.call_count == 2
+            mock_logger.info.assert_any_call(
                 "Starting FastMCP server for SemaphoreUI at http://test.example.com"
             )
+            mock_logger.info.assert_any_call("STDIO transport")
             mock_run.assert_called_once_with(transport="stdio")
 
     @patch("semaphore_mcp.server.SemaphoreMCPServer")
@@ -94,9 +97,9 @@ class TestSemaphoreMCPServerCoverage:
         start_server("http://test.example.com", "test-token")
 
         mock_server_class.assert_called_once_with(
-            "http://test.example.com", "test-token"
+            "http://test.example.com", "test-token", host="127.0.0.1", port=8000
         )
-        mock_server_instance.run.assert_called_once()
+        mock_server_instance.run.assert_called_once_with(transport="stdio")
 
     @patch("semaphore_mcp.server.SemaphoreMCPServer")
     def test_start_server_function_without_parameters(self, mock_server_class):
@@ -106,8 +109,10 @@ class TestSemaphoreMCPServerCoverage:
 
         start_server()
 
-        mock_server_class.assert_called_once_with(None, None)
-        mock_server_instance.run.assert_called_once()
+        mock_server_class.assert_called_once_with(
+            None, None, host="127.0.0.1", port=8000
+        )
+        mock_server_instance.run.assert_called_once_with(transport="stdio")
 
     def test_tool_classes_integration(self):
         """Test that tool classes are properly integrated with semaphore client."""
@@ -131,7 +136,9 @@ class TestSemaphoreMCPServerCoverage:
 
         server = SemaphoreMCPServer("http://test.example.com", "test-token")
 
-        mock_fastmcp_class.assert_called_once_with("semaphore")
+        mock_fastmcp_class.assert_called_once_with(
+            "semaphore", host="127.0.0.1", port=8000
+        )
         assert server.mcp == mock_fastmcp_instance
 
     def test_tool_registration_methods(self):
