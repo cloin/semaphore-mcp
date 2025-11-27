@@ -362,9 +362,7 @@ class SemaphoreAPIClient:
         Returns:
             Empty dict on success (204 response)
         """
-        return self._request(
-            "DELETE", f"project/{project_id}/templates/{template_id}"
-        )
+        return self._request("DELETE", f"project/{project_id}/templates/{template_id}")
 
     def stop_all_template_tasks(
         self, project_id: int, template_id: int
@@ -414,10 +412,6 @@ class SemaphoreAPIClient:
             payload["environment"] = environment
 
         return self._request("POST", f"project/{project_id}/tasks", json=payload)
-
-    def get_task_output(self, project_id: int, task_id: int) -> dict[str, Any]:
-        """Get the output of a task."""
-        return self._request("GET", f"project/{project_id}/task/{task_id}/output")
 
     def stop_task(self, project_id: int, task_id: int) -> dict[str, Any]:
         """Stop a running task."""
