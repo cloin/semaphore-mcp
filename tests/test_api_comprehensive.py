@@ -367,6 +367,292 @@ class TestSemaphoreAPIClientComprehensive:
             assert result == mock_response
 
 
+class TestProjectCRUDOperations:
+    """Test project CRUD operations in API client."""
+
+    @pytest.fixture
+    def mock_client(self):
+        """Create a mock API client for testing."""
+        return SemaphoreAPIClient("http://test.example.com", "test-token")
+
+    def test_create_project_basic(self, mock_client):
+        """Test create_project with basic parameters."""
+        mock_response = {"id": 1, "name": "test-project"}
+        with patch.object(
+            mock_client, "_request", return_value=mock_response
+        ) as mock_request:
+            result = mock_client.create_project("test-project")
+            assert result == mock_response
+            args, kwargs = mock_request.call_args
+            assert kwargs["json"]["name"] == "test-project"
+            assert kwargs["json"]["alert"] is False
+            assert kwargs["json"]["max_parallel_tasks"] == 0
+            assert kwargs["json"]["demo"] is False
+
+    def test_create_project_with_all_options(self, mock_client):
+        """Test create_project with all optional parameters."""
+        mock_response = {"id": 1, "name": "test-project"}
+        with patch.object(
+            mock_client, "_request", return_value=mock_response
+        ) as mock_request:
+            result = mock_client.create_project(
+                name="test-project",
+                alert=True,
+                alert_chat="slack-channel",
+                max_parallel_tasks=5,
+                project_type="ansible",
+                demo=True,
+            )
+            assert result == mock_response
+            args, kwargs = mock_request.call_args
+            assert kwargs["json"]["name"] == "test-project"
+            assert kwargs["json"]["alert"] is True
+            assert kwargs["json"]["alert_chat"] == "slack-channel"
+            assert kwargs["json"]["max_parallel_tasks"] == 5
+            assert kwargs["json"]["type"] == "ansible"
+            assert kwargs["json"]["demo"] is True
+
+    def test_update_project_name_only(self, mock_client):
+        """Test update_project with name only."""
+        mock_response = {}
+        with patch.object(
+            mock_client, "_request", return_value=mock_response
+        ) as mock_request:
+            result = mock_client.update_project(1, name="updated-name")
+            assert result == mock_response
+            args, kwargs = mock_request.call_args
+            assert kwargs["json"]["id"] == 1
+            assert kwargs["json"]["name"] == "updated-name"
+
+    def test_update_project_all_fields(self, mock_client):
+        """Test update_project with all fields."""
+        mock_response = {}
+        with patch.object(
+            mock_client, "_request", return_value=mock_response
+        ) as mock_request:
+            result = mock_client.update_project(
+                project_id=1,
+                name="updated-name",
+                alert=True,
+                alert_chat="new-channel",
+                max_parallel_tasks=10,
+                project_type="terraform",
+            )
+            assert result == mock_response
+            args, kwargs = mock_request.call_args
+            assert kwargs["json"]["id"] == 1
+            assert kwargs["json"]["name"] == "updated-name"
+            assert kwargs["json"]["alert"] is True
+            assert kwargs["json"]["alert_chat"] == "new-channel"
+            assert kwargs["json"]["max_parallel_tasks"] == 10
+            assert kwargs["json"]["type"] == "terraform"
+
+    def test_delete_project(self, mock_client):
+        """Test delete_project method."""
+        mock_response = {}
+        with patch.object(mock_client, "_request", return_value=mock_response):
+            result = mock_client.delete_project(1)
+            assert result == mock_response
+
+
+class TestTemplateCRUDOperations:
+    """Test template CRUD operations in API client."""
+
+    @pytest.fixture
+    def mock_client(self):
+        """Create a mock API client for testing."""
+        return SemaphoreAPIClient("http://test.example.com", "test-token")
+
+    def test_create_template_basic(self, mock_client):
+        """Test create_template with required parameters."""
+        mock_response = {"id": 1, "name": "test-template"}
+        with patch.object(
+            mock_client, "_request", return_value=mock_response
+        ) as mock_request:
+            result = mock_client.create_template(
+                project_id=1,
+                name="test-template",
+                playbook="playbook.yml",
+                inventory_id=1,
+                repository_id=1,
+                environment_id=1,
+            )
+            assert result == mock_response
+            args, kwargs = mock_request.call_args
+            assert kwargs["json"]["project_id"] == 1
+            assert kwargs["json"]["name"] == "test-template"
+            assert kwargs["json"]["playbook"] == "playbook.yml"
+            assert kwargs["json"]["inventory_id"] == 1
+            assert kwargs["json"]["repository_id"] == 1
+            assert kwargs["json"]["environment_id"] == 1
+
+    def test_create_template_with_all_options(self, mock_client):
+        """Test create_template with all optional parameters."""
+        mock_response = {"id": 1, "name": "test-template"}
+        with patch.object(
+            mock_client, "_request", return_value=mock_response
+        ) as mock_request:
+            result = mock_client.create_template(
+                project_id=1,
+                name="test-template",
+                playbook="playbook.yml",
+                inventory_id=1,
+                repository_id=1,
+                environment_id=1,
+                description="Test description",
+                arguments='["--check"]',
+                allow_override_args_in_task=True,
+                suppress_success_alerts=True,
+                app="ansible",
+                git_branch="main",
+                survey_vars=[{"name": "var1", "title": "Variable 1"}],
+                vaults=[{"name": "vault1"}],
+                template_type="build",
+                start_version="1.0.0",
+                build_template_id=2,
+                autorun=True,
+                view_id=1,
+            )
+            assert result == mock_response
+            args, kwargs = mock_request.call_args
+            assert kwargs["json"]["description"] == "Test description"
+            assert kwargs["json"]["arguments"] == '["--check"]'
+            assert kwargs["json"]["allow_override_args_in_task"] is True
+            assert kwargs["json"]["suppress_success_alerts"] is True
+            assert kwargs["json"]["git_branch"] == "main"
+            assert kwargs["json"]["survey_vars"] == [
+                {"name": "var1", "title": "Variable 1"}
+            ]
+            assert kwargs["json"]["vaults"] == [{"name": "vault1"}]
+            assert kwargs["json"]["type"] == "build"
+            assert kwargs["json"]["start_version"] == "1.0.0"
+            assert kwargs["json"]["build_template_id"] == 2
+            assert kwargs["json"]["autorun"] is True
+            assert kwargs["json"]["view_id"] == 1
+
+    def test_update_template_partial(self, mock_client):
+        """Test update_template with partial fields."""
+        mock_response = {}
+        with patch.object(
+            mock_client, "_request", return_value=mock_response
+        ) as mock_request:
+            result = mock_client.update_template(
+                project_id=1,
+                template_id=1,
+                name="updated-template",
+                playbook="new-playbook.yml",
+            )
+            assert result == mock_response
+            args, kwargs = mock_request.call_args
+            assert kwargs["json"]["id"] == 1
+            assert kwargs["json"]["project_id"] == 1
+            assert kwargs["json"]["name"] == "updated-template"
+            assert kwargs["json"]["playbook"] == "new-playbook.yml"
+
+    def test_update_template_all_fields(self, mock_client):
+        """Test update_template with all fields."""
+        mock_response = {}
+        with patch.object(
+            mock_client, "_request", return_value=mock_response
+        ) as mock_request:
+            result = mock_client.update_template(
+                project_id=1,
+                template_id=1,
+                name="updated-template",
+                playbook="new-playbook.yml",
+                inventory_id=2,
+                repository_id=2,
+                environment_id=2,
+                description="Updated description",
+                arguments='["--diff"]',
+                allow_override_args_in_task=False,
+                suppress_success_alerts=False,
+                app="terraform",
+                git_branch="develop",
+                survey_vars=[{"name": "var2"}],
+                vaults=[{"name": "vault2"}],
+                template_type="deploy",
+                start_version="2.0.0",
+                build_template_id=3,
+                autorun=False,
+                view_id=2,
+            )
+            assert result == mock_response
+            args, kwargs = mock_request.call_args
+            payload = kwargs["json"]
+            assert payload["name"] == "updated-template"
+            assert payload["playbook"] == "new-playbook.yml"
+            assert payload["inventory_id"] == 2
+            assert payload["repository_id"] == 2
+            assert payload["environment_id"] == 2
+            assert payload["description"] == "Updated description"
+            assert payload["arguments"] == '["--diff"]'
+            assert payload["allow_override_args_in_task"] is False
+            assert payload["suppress_success_alerts"] is False
+            assert payload["app"] == "terraform"
+            assert payload["git_branch"] == "develop"
+            assert payload["survey_vars"] == [{"name": "var2"}]
+            assert payload["vaults"] == [{"name": "vault2"}]
+            assert payload["type"] == "deploy"
+            assert payload["start_version"] == "2.0.0"
+            assert payload["build_template_id"] == 3
+            assert payload["autorun"] is False
+            assert payload["view_id"] == 2
+
+    def test_delete_template(self, mock_client):
+        """Test delete_template method."""
+        mock_response = {}
+        with patch.object(mock_client, "_request", return_value=mock_response):
+            result = mock_client.delete_template(1, 1)
+            assert result == mock_response
+
+    def test_stop_all_template_tasks(self, mock_client):
+        """Test stop_all_template_tasks method."""
+        mock_response = {}
+        with patch.object(mock_client, "_request", return_value=mock_response):
+            result = mock_client.stop_all_template_tasks(1, 1)
+            assert result == mock_response
+
+
+class TestAPIClientErrorHandling:
+    """Test API client error handling."""
+
+    @pytest.fixture
+    def mock_client(self):
+        """Create a mock API client for testing."""
+        return SemaphoreAPIClient("http://test.example.com", "test-token")
+
+    def test_request_404_error_enhanced_message(self, mock_client):
+        """Test that 404 errors get enhanced error messages."""
+        import requests
+
+        mock_response = Mock()
+        mock_response.status_code = 404
+        mock_response.content = b""
+        http_error = requests.exceptions.HTTPError(response=mock_response)
+        mock_response.raise_for_status.side_effect = http_error
+
+        with patch.object(mock_client.session, "request", return_value=mock_response):
+            with pytest.raises(requests.exceptions.HTTPError) as exc_info:
+                mock_client._request("GET", "project/999")
+            assert "Resource not found (404)" in str(exc_info.value)
+            assert "may have been deleted" in str(exc_info.value)
+
+    def test_request_invalid_json_response(self, mock_client):
+        """Test handling of invalid JSON responses."""
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.content = b"not valid json"
+        mock_response.text = "not valid json"
+        mock_response.raise_for_status.return_value = None
+        mock_response.json.side_effect = json.JSONDecodeError("error", "doc", 0)
+
+        with patch.object(mock_client.session, "request", return_value=mock_response):
+            with pytest.raises(ValueError) as exc_info:
+                mock_client._request("GET", "test")
+            assert "Invalid JSON response" in str(exc_info.value)
+
+
 class TestCreateClientFunction:
     """Test the create_client factory function."""
 
