@@ -8,9 +8,10 @@ A Model Context Protocol (MCP) server that connects AI assistants to [SemaphoreU
 
 ### Prerequisites
 
-- Docker
+- Docker (or Podman)
 - A running SemaphoreUI instance with an API token
-- Claude Desktop (or another MCP client)
+- Claude Desktop or Claude Code (or another MCP client)
+- Node.js (for Claude Desktop only - required for `mcp-remote`)
 
 ### 1. Get a SemaphoreUI API Token
 
@@ -29,9 +30,13 @@ docker run -d --name semaphore-mcp \
   ghcr.io/cloin/semaphore-mcp:latest
 ```
 
-### 3. Configure Claude Desktop
+> **Note:** `SEMAPHORE_URL` is where the MCP server connects to SemaphoreUI. `MCP_PORT` is where the MCP server listens for client connections (Claude Desktop/Code). Use this port in your client configuration below.
 
-Edit your Claude Desktop config file:
+### 3a. Configure Claude Desktop
+
+Claude Desktop requires the `mcp-remote` proxy to connect to HTTP-based MCP servers. This requires Node.js to be installed (`npx` comes with npm).
+
+Edit your config file:
 - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
 - **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
 - **Linux**: `~/.config/claude-desktop/claude_desktop_config.json`
@@ -45,6 +50,20 @@ Edit your Claude Desktop config file:
     }
   }
 }
+```
+
+### 3b. Configure Claude Code
+
+Claude Code supports remote MCP servers directly:
+
+```bash
+claude mcp add --transport http semaphore http://127.0.0.1:8500/mcp
+```
+
+Verify it's configured:
+
+```bash
+claude mcp list
 ```
 
 ### 4. Test It
