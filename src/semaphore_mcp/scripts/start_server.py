@@ -24,6 +24,23 @@ def parse_args():
         default=os.environ.get("SEMAPHORE_API_TOKEN"),
     )
     parser.add_argument(
+        "--transport",
+        help="Transport type: stdio or http (default: from MCP_TRANSPORT env or stdio)",
+        choices=["stdio", "http"],
+        default=os.environ.get("MCP_TRANSPORT", "stdio"),
+    )
+    parser.add_argument(
+        "--host",
+        help="Host to bind to for HTTP transport (default: from MCP_HOST env or 0.0.0.0)",
+        default=os.environ.get("MCP_HOST", "0.0.0.0"),
+    )
+    parser.add_argument(
+        "--port",
+        help="Port for HTTP transport (default: from MCP_PORT env or 8000)",
+        type=int,
+        default=int(os.environ.get("MCP_PORT", "8000")),
+    )
+    parser.add_argument(
         "--verbose", "-v", help="Enable verbose logging", action="store_true"
     )
 
@@ -39,7 +56,13 @@ def main():
 
         logging.getLogger("semaphore_mcp").setLevel(logging.DEBUG)
 
-    start_server(args.url, args.token)
+    start_server(
+        semaphore_url=args.url,
+        semaphore_token=args.token,
+        transport=args.transport,
+        host=args.host,
+        port=args.port,
+    )
 
 
 if __name__ == "__main__":

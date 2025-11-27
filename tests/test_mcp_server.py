@@ -52,7 +52,6 @@ class TestMCPServer:
         assert hasattr(server.task_tools, "list_tasks")
         assert hasattr(server.task_tools, "get_task")
         assert hasattr(server.task_tools, "run_task")
-        assert hasattr(server.task_tools, "get_task_output")
         assert hasattr(server.task_tools, "get_latest_failed_task")
 
         # Note: Environment and inventory tools are currently disabled in our FastMCP implementation

@@ -83,6 +83,90 @@ class SemaphoreAPIClient:
         """Get a project by ID."""
         return self._request("GET", f"project/{project_id}")
 
+    def create_project(
+        self,
+        name: str,
+        alert: bool = False,
+        alert_chat: Optional[str] = None,
+        max_parallel_tasks: int = 0,
+        project_type: Optional[str] = None,
+        demo: bool = False,
+    ) -> dict[str, Any]:
+        """Create a new project.
+
+        Args:
+            name: Project name
+            alert: Enable alerts
+            alert_chat: Chat channel for alerts
+            max_parallel_tasks: Maximum parallel tasks (0 = unlimited)
+            project_type: Project type
+            demo: Create demo resources
+
+        Returns:
+            Created project information
+        """
+        payload: dict[str, Any] = {
+            "name": name,
+            "alert": alert,
+            "max_parallel_tasks": max_parallel_tasks,
+            "demo": demo,
+        }
+
+        if alert_chat is not None:
+            payload["alert_chat"] = alert_chat
+        if project_type is not None:
+            payload["type"] = project_type
+
+        return self._request("POST", "projects", json=payload)
+
+    def update_project(
+        self,
+        project_id: int,
+        name: Optional[str] = None,
+        alert: Optional[bool] = None,
+        alert_chat: Optional[str] = None,
+        max_parallel_tasks: Optional[int] = None,
+        project_type: Optional[str] = None,
+    ) -> dict[str, Any]:
+        """Update an existing project.
+
+        Args:
+            project_id: Project ID
+            name: Project name (optional)
+            alert: Enable alerts (optional)
+            alert_chat: Chat channel for alerts (optional)
+            max_parallel_tasks: Maximum parallel tasks (optional)
+            project_type: Project type (optional)
+
+        Returns:
+            Empty dict on success (204 response)
+        """
+        payload: dict[str, Any] = {"id": project_id}
+
+        if name is not None:
+            payload["name"] = name
+        if alert is not None:
+            payload["alert"] = alert
+        if alert_chat is not None:
+            payload["alert_chat"] = alert_chat
+        if max_parallel_tasks is not None:
+            payload["max_parallel_tasks"] = max_parallel_tasks
+        if project_type is not None:
+            payload["type"] = project_type
+
+        return self._request("PUT", f"project/{project_id}", json=payload)
+
+    def delete_project(self, project_id: int) -> dict[str, Any]:
+        """Delete a project by ID.
+
+        Args:
+            project_id: Project ID
+
+        Returns:
+            Empty dict on success (204 response)
+        """
+        return self._request("DELETE", f"project/{project_id}")
+
     # Template endpoints
     def list_templates(self, project_id: int) -> list[dict[str, Any]]:
         """List all templates for a project."""
@@ -91,7 +175,210 @@ class SemaphoreAPIClient:
 
     def get_template(self, project_id: int, template_id: int) -> dict[str, Any]:
         """Get a template by ID."""
-        return self._request("GET", f"project/{project_id}/template/{template_id}")
+        return self._request("GET", f"project/{project_id}/templates/{template_id}")
+
+    def create_template(
+        self,
+        project_id: int,
+        name: str,
+        playbook: str,
+        inventory_id: int,
+        repository_id: int,
+        environment_id: int,
+        description: Optional[str] = None,
+        arguments: Optional[str] = None,
+        allow_override_args_in_task: bool = False,
+        suppress_success_alerts: bool = False,
+        app: str = "ansible",
+        git_branch: Optional[str] = None,
+        survey_vars: Optional[list[dict[str, Any]]] = None,
+        vaults: Optional[list[dict[str, Any]]] = None,
+        template_type: Optional[str] = None,
+        start_version: Optional[str] = None,
+        build_template_id: Optional[int] = None,
+        autorun: bool = False,
+        view_id: Optional[int] = None,
+    ) -> dict[str, Any]:
+        """Create a new template for a project.
+
+        Args:
+            project_id: Project ID
+            name: Template name
+            playbook: Playbook file path (e.g., "playbook.yml")
+            inventory_id: Inventory ID
+            repository_id: Repository ID
+            environment_id: Environment ID
+            description: Template description
+            arguments: Extra arguments (JSON string, e.g., "[]")
+            allow_override_args_in_task: Allow overriding arguments in task
+            suppress_success_alerts: Suppress success alerts
+            app: Application type (default: "ansible")
+            git_branch: Git branch to use
+            survey_vars: Survey variables for prompting
+            vaults: Vault configurations
+            template_type: Template type ("", "build", or "deploy")
+            start_version: Start version
+            build_template_id: Build template ID (for deploy templates)
+            autorun: Enable autorun
+            view_id: View ID
+
+        Returns:
+            Created template information
+        """
+        payload: dict[str, Any] = {
+            "project_id": project_id,
+            "name": name,
+            "playbook": playbook,
+            "inventory_id": inventory_id,
+            "repository_id": repository_id,
+            "environment_id": environment_id,
+            "allow_override_args_in_task": allow_override_args_in_task,
+            "suppress_success_alerts": suppress_success_alerts,
+            "app": app,
+            "autorun": autorun,
+        }
+
+        if description is not None:
+            payload["description"] = description
+        if arguments is not None:
+            payload["arguments"] = arguments
+        if git_branch is not None:
+            payload["git_branch"] = git_branch
+        if survey_vars is not None:
+            payload["survey_vars"] = survey_vars
+        if vaults is not None:
+            payload["vaults"] = vaults
+        if template_type is not None:
+            payload["type"] = template_type
+        if start_version is not None:
+            payload["start_version"] = start_version
+        if build_template_id is not None:
+            payload["build_template_id"] = build_template_id
+        if view_id is not None:
+            payload["view_id"] = view_id
+
+        return self._request("POST", f"project/{project_id}/templates", json=payload)
+
+    def update_template(
+        self,
+        project_id: int,
+        template_id: int,
+        name: Optional[str] = None,
+        playbook: Optional[str] = None,
+        inventory_id: Optional[int] = None,
+        repository_id: Optional[int] = None,
+        environment_id: Optional[int] = None,
+        description: Optional[str] = None,
+        arguments: Optional[str] = None,
+        allow_override_args_in_task: Optional[bool] = None,
+        suppress_success_alerts: Optional[bool] = None,
+        app: Optional[str] = None,
+        git_branch: Optional[str] = None,
+        survey_vars: Optional[list[dict[str, Any]]] = None,
+        vaults: Optional[list[dict[str, Any]]] = None,
+        template_type: Optional[str] = None,
+        start_version: Optional[str] = None,
+        build_template_id: Optional[int] = None,
+        autorun: Optional[bool] = None,
+        view_id: Optional[int] = None,
+    ) -> dict[str, Any]:
+        """Update an existing template.
+
+        Args:
+            project_id: Project ID
+            template_id: Template ID
+            name: Template name (optional)
+            playbook: Playbook file path (optional)
+            inventory_id: Inventory ID (optional)
+            repository_id: Repository ID (optional)
+            environment_id: Environment ID (optional)
+            description: Template description (optional)
+            arguments: Extra arguments (optional)
+            allow_override_args_in_task: Allow overriding arguments (optional)
+            suppress_success_alerts: Suppress success alerts (optional)
+            app: Application type (optional)
+            git_branch: Git branch (optional)
+            survey_vars: Survey variables (optional)
+            vaults: Vault configurations (optional)
+            template_type: Template type (optional)
+            start_version: Start version (optional)
+            build_template_id: Build template ID (optional)
+            autorun: Enable autorun (optional)
+            view_id: View ID (optional)
+
+        Returns:
+            Empty dict on success (204 response)
+        """
+        payload: dict[str, Any] = {"id": template_id, "project_id": project_id}
+
+        if name is not None:
+            payload["name"] = name
+        if playbook is not None:
+            payload["playbook"] = playbook
+        if inventory_id is not None:
+            payload["inventory_id"] = inventory_id
+        if repository_id is not None:
+            payload["repository_id"] = repository_id
+        if environment_id is not None:
+            payload["environment_id"] = environment_id
+        if description is not None:
+            payload["description"] = description
+        if arguments is not None:
+            payload["arguments"] = arguments
+        if allow_override_args_in_task is not None:
+            payload["allow_override_args_in_task"] = allow_override_args_in_task
+        if suppress_success_alerts is not None:
+            payload["suppress_success_alerts"] = suppress_success_alerts
+        if app is not None:
+            payload["app"] = app
+        if git_branch is not None:
+            payload["git_branch"] = git_branch
+        if survey_vars is not None:
+            payload["survey_vars"] = survey_vars
+        if vaults is not None:
+            payload["vaults"] = vaults
+        if template_type is not None:
+            payload["type"] = template_type
+        if start_version is not None:
+            payload["start_version"] = start_version
+        if build_template_id is not None:
+            payload["build_template_id"] = build_template_id
+        if autorun is not None:
+            payload["autorun"] = autorun
+        if view_id is not None:
+            payload["view_id"] = view_id
+
+        return self._request(
+            "PUT", f"project/{project_id}/templates/{template_id}", json=payload
+        )
+
+    def delete_template(self, project_id: int, template_id: int) -> dict[str, Any]:
+        """Delete a template by ID.
+
+        Args:
+            project_id: Project ID
+            template_id: Template ID
+
+        Returns:
+            Empty dict on success (204 response)
+        """
+        return self._request("DELETE", f"project/{project_id}/templates/{template_id}")
+
+    def stop_all_template_tasks(
+        self, project_id: int, template_id: int
+    ) -> dict[str, Any]:
+        """Stop all running tasks for a template.
+
+        Args:
+            project_id: Project ID
+            template_id: Template ID
+
+        Returns:
+            Empty dict on success (204 response)
+        """
+        return self._request(
+            "POST", f"project/{project_id}/templates/{template_id}/stop_all_tasks"
+        )
 
     # Task endpoints
     def list_tasks(self, project_id: int) -> list[dict[str, Any]]:
@@ -125,10 +412,6 @@ class SemaphoreAPIClient:
             payload["environment"] = environment
 
         return self._request("POST", f"project/{project_id}/tasks", json=payload)
-
-    def get_task_output(self, project_id: int, task_id: int) -> dict[str, Any]:
-        """Get the output of a task."""
-        return self._request("GET", f"project/{project_id}/task/{task_id}/output")
 
     def stop_task(self, project_id: int, task_id: int) -> dict[str, Any]:
         """Stop a running task."""

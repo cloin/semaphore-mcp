@@ -27,7 +27,11 @@ class SemaphoreMCPServer:
     """FastMCP server for SemaphoreUI."""
 
     def __init__(
-        self, semaphore_url: Optional[str] = None, semaphore_token: Optional[str] = None
+        self,
+        semaphore_url: Optional[str] = None,
+        semaphore_token: Optional[str] = None,
+        host: str = "127.0.0.1",
+        port: int = 8000,
     ):
         """
         Initialize the MCP server.
@@ -35,14 +39,16 @@ class SemaphoreMCPServer:
         Args:
             semaphore_url: SemaphoreUI API URL
             semaphore_token: SemaphoreUI API token
+            host: Host to bind to (for HTTP transport)
+            port: Port to listen on (for HTTP transport)
         """
         # Use provided values or fall back to config
         self.url = semaphore_url or get_config("SEMAPHORE_URL")
         self.token = semaphore_token or get_config("SEMAPHORE_API_TOKEN")
         self.semaphore = create_client(self.url, self.token)
 
-        # Initialize FastMCP
-        self.mcp = FastMCP("semaphore")
+        # Initialize FastMCP with host/port for HTTP transport
+        self.mcp = FastMCP("semaphore", host=host, port=port)
 
         # Initialize tool classes
         self.project_tools = ProjectTools(self.semaphore)
@@ -59,16 +65,22 @@ class SemaphoreMCPServer:
         # Project tools
         self.mcp.tool()(self.project_tools.list_projects)
         self.mcp.tool()(self.project_tools.get_project)
+        self.mcp.tool()(self.project_tools.create_project)
+        self.mcp.tool()(self.project_tools.update_project)
+        self.mcp.tool()(self.project_tools.delete_project)
 
         # Template tools
         self.mcp.tool()(self.template_tools.list_templates)
         self.mcp.tool()(self.template_tools.get_template)
+        self.mcp.tool()(self.template_tools.create_template)
+        self.mcp.tool()(self.template_tools.update_template)
+        self.mcp.tool()(self.template_tools.delete_template)
+        self.mcp.tool()(self.template_tools.stop_all_template_tasks)
 
         # Task tools
         self.mcp.tool()(self.task_tools.list_tasks)
         self.mcp.tool()(self.task_tools.get_task)
         self.mcp.tool()(self.task_tools.run_task)
-        self.mcp.tool()(self.task_tools.get_task_output)
         self.mcp.tool()(self.task_tools.get_latest_failed_task)
 
         # Enhanced task tools - filtering and bulk operations
@@ -109,14 +121,29 @@ class SemaphoreMCPServer:
 
     # Tool methods have been moved to dedicated tool classes
 
-    def run(self):
-        """Run the MCP server."""
+    def run(self, transport: str = "stdio"):
+        """Run the MCP server.
+
+        Args:
+            transport: Transport type - "stdio" or "http"
+        """
         logger.info(f"Starting FastMCP server for SemaphoreUI at {self.url}")
-        self.mcp.run(transport="stdio")
+        if transport == "http":
+            logger.info(
+                f"HTTP transport on {self.mcp.settings.host}:{self.mcp.settings.port}"
+            )
+            self.mcp.run(transport="streamable-http")
+        else:
+            logger.info("STDIO transport")
+            self.mcp.run(transport="stdio")
 
 
 def start_server(
-    semaphore_url: Optional[str] = None, semaphore_token: Optional[str] = None
+    semaphore_url: Optional[str] = None,
+    semaphore_token: Optional[str] = None,
+    transport: str = "stdio",
+    host: str = "127.0.0.1",
+    port: int = 8000,
 ):
     """
     Start an MCP server.
@@ -124,9 +151,12 @@ def start_server(
     Args:
         semaphore_url: SemaphoreUI API URL
         semaphore_token: SemaphoreUI API token
+        transport: Transport type - "stdio" or "http"
+        host: Host to bind to (for HTTP transport)
+        port: Port to listen on (for HTTP transport)
     """
-    server = SemaphoreMCPServer(semaphore_url, semaphore_token)
-    server.run()
+    server = SemaphoreMCPServer(semaphore_url, semaphore_token, host=host, port=port)
+    server.run(transport=transport)
 
 
 if __name__ == "__main__":
