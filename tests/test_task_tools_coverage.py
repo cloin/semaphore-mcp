@@ -415,7 +415,6 @@ class TestTaskToolsCoverage:
         )
 
         # Mock other calls
-        task_tools.semaphore.get_task_output.return_value = {"output": "test"}
         task_tools.semaphore.get_task_raw_output.return_value = "raw output"
         task_tools.semaphore.list_projects.return_value = [{"id": 1, "name": "test"}]
 
@@ -429,9 +428,6 @@ class TestTaskToolsCoverage:
         """Test analyze_task_failure when output fetches fail."""
         mock_task = {"id": 1, "status": "error"}
         task_tools.semaphore.get_task.return_value = mock_task
-        task_tools.semaphore.get_task_output.side_effect = Exception(
-            "Output fetch failed"
-        )
         task_tools.semaphore.get_task_raw_output.side_effect = Exception(
             "Raw output fetch failed"
         )
@@ -440,10 +436,8 @@ class TestTaskToolsCoverage:
         result = await task_tools.analyze_task_failure(1, 1)
 
         assert result["analysis_ready"] is True
-        assert result["outputs"]["structured"] is None
         assert result["outputs"]["raw"] is None
         assert result["outputs"]["has_raw_output"] is False
-        assert result["outputs"]["has_structured_output"] is False
 
     @pytest.mark.asyncio
     async def test_bulk_analyze_failures_no_failed_tasks(self, task_tools):

@@ -9,13 +9,13 @@ description = "Model Context Protocol (MCP) server for SemaphoreUI automation"
 readme = "README.md"
 requires-python = ">=3.10"
 keywords = [ "mcp", "model-context-protocol", "semaphore", "ansible", "automation", "devops",]
-classifiers = [ "Development Status :: 4 - Beta", "Intended Audience :: Developers", "Intended Audience :: System Administrators", "License :: OSI Approved :: MIT License", "Operating System :: OS Independent", "Programming Language :: Python :: 3", "Programming Language :: Python :: 3.10", "Programming Language :: Python :: 3.11", "Programming Language :: Python :: 3.12", "Topic :: Software Development :: Libraries :: Python Modules", "Topic :: System :: Systems Administration",]
+classifiers = [ "Development Status :: 4 - Beta", "Intended Audience :: Developers", "Intended Audience :: System Administrators", "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)", "Operating System :: OS Independent", "Programming Language :: Python :: 3", "Programming Language :: Python :: 3.10", "Programming Language :: Python :: 3.11", "Programming Language :: Python :: 3.12", "Topic :: Software Development :: Libraries :: Python Modules", "Topic :: System :: Systems Administration",]
 dependencies = [ "requests>=2.31.0", "pydantic>=2.5.0", "python-dotenv>=1.0.0", "mcp>=1.9.3", "aiohttp>=3.8.5",]
 [[project.authors]]
 name = "Colin McNaughton"
 
 [project.license]
-text = "MIT"
+text = "AGPL-3.0-or-later"
 
 [project.optional-dependencies]
 dev = [ "pytest>=7.4.0", "pytest-asyncio>=0.21.1", "ruff>=0.1.0", "mypy>=1.8.0", "types-requests>=2.31.0", "pre-commit>=3.5.0",]

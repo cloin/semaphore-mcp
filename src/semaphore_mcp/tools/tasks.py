@@ -5,7 +5,6 @@ This module provides tools for interacting with Semaphore tasks.
 """
 
 import asyncio
-import json
 import logging
 import time
 from typing import Any, Optional, Union
@@ -393,23 +392,6 @@ class TaskTools(BaseTool):
                 "suggestion": "Check logs for more details",
             }
 
-    async def get_task_output(self, project_id: int, task_id: int) -> str:
-        """Get output from a completed task.
-
-        Args:
-            project_id: ID of the project
-            task_id: ID of the task
-
-        Returns:
-            Task output
-        """
-        try:
-            output = self.semaphore.get_task_output(project_id, task_id)
-            # Format output nicely
-            return json.dumps(output, indent=2)
-        except Exception as e:
-            self.handle_error(e, f"getting output for task {task_id}")
-
     async def stop_task(self, project_id: int, task_id: int) -> dict[str, Any]:
         """Stop a running task.
 
@@ -690,7 +672,7 @@ class TaskTools(BaseTool):
                         # Get final output if available
                         output_available = False
                         try:
-                            self.semaphore.get_task_output(project_id, task_id)
+                            self.semaphore.get_task_raw_output(project_id, task_id)
                             output_available = True
                         except Exception:
                             pass  # Output not available yet, that's ok
@@ -914,14 +896,8 @@ class TaskTools(BaseTool):
                 except Exception as e:
                     logger.warning(f"Could not fetch template {template_id}: {str(e)}")
 
-            # Get both structured and raw output
-            structured_output = None
+            # Get raw output for analysis
             raw_output = None
-
-            try:
-                structured_output = self.semaphore.get_task_output(project_id, task_id)
-            except Exception as e:
-                logger.warning(f"Could not fetch structured output: {str(e)}")
 
             try:
                 raw_output = self.semaphore.get_task_raw_output(project_id, task_id)
@@ -990,10 +966,8 @@ class TaskTools(BaseTool):
                     else None
                 ),
                 "outputs": {
-                    "structured": structured_output,
                     "raw": raw_output,
                     "has_raw_output": raw_output is not None,
-                    "has_structured_output": structured_output is not None,
                 },
                 "analysis_guidance": {
                     "focus_areas": [
