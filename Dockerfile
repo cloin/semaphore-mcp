@@ -1,8 +1,15 @@
 FROM python:3.12-slim
 
+# OCI image labels
+LABEL org.opencontainers.image.title="semaphore-mcp"
+LABEL org.opencontainers.image.description="Model Context Protocol (MCP) server for SemaphoreUI automation"
+LABEL org.opencontainers.image.source="https://github.com/cloin/semaphore-mcp"
+LABEL org.opencontainers.image.licenses="AGPL-3.0-or-later"
+
 WORKDIR /app
 
-# Copy only what's needed for installation
+# Copy license and files needed for installation
+COPY LICENSE .
 COPY pyproject.toml .
 COPY src/ src/
 
