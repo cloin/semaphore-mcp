@@ -136,13 +136,6 @@ class TestSemaphoreAPIClientComprehensive:
             assert "json" in kwargs
             assert kwargs["json"]["environment"] == environment
 
-    def test_get_task_output(self, mock_client):
-        """Test get_task_output method."""
-        mock_response = {"output": "task output"}
-        with patch.object(mock_client, "_request", return_value=mock_response):
-            result = mock_client.get_task_output(1, 1)
-            assert result == mock_response
-
     def test_stop_task(self, mock_client):
         """Test stop_task method."""
         mock_response = {"status": "stopped"}

@@ -2,7 +2,6 @@
 Tests for the TaskTools class functionality.
 """
 
-import json
 from unittest.mock import AsyncMock, MagicMock, Mock
 
 import pytest
@@ -239,39 +238,6 @@ class TestTaskTools:
         assert "error" in result
         assert "HTTP error while running task" in result["error"]
         assert "http_error" == result["error_type"]
-
-    @pytest.mark.asyncio
-    async def test_get_task_output(self, task_tools):
-        """Test get_task_output method."""
-        # Define mock return value
-        project_id = 1
-        task_id = 42
-        mock_output = {"output": "Task output", "status": "success"}
-        task_tools.semaphore.get_task_output.return_value = mock_output
-
-        # Call the method
-        result = await task_tools.get_task_output(project_id, task_id)
-
-        # Verify the result is JSON formatted
-        assert result == json.dumps(mock_output, indent=2)
-        task_tools.semaphore.get_task_output.assert_called_once_with(
-            project_id, task_id
-        )
-
-    @pytest.mark.asyncio
-    async def test_get_task_output_error(self, task_tools):
-        """Test get_task_output method with error."""
-        # Set up the mock to raise an exception
-        project_id = 1
-        task_id = 42
-        task_tools.semaphore.get_task_output.side_effect = Exception("API error")
-
-        # The method should raise a RuntimeError
-        with pytest.raises(RuntimeError) as excinfo:
-            await task_tools.get_task_output(project_id, task_id)
-
-        # Verify the error message
-        assert "Error during getting output for task" in str(excinfo.value)
 
     @pytest.mark.asyncio
     async def test_filter_tasks(self, task_tools):
@@ -572,7 +538,7 @@ class TestTaskTools:
         # Mock task to complete quickly
         mock_task = {"id": task_id, "status": "success"}
         task_tools.semaphore.get_task.return_value = mock_task
-        task_tools.semaphore.get_task_output.return_value = {"output": "test"}
+        task_tools.semaphore.get_task_raw_output.return_value = "test output"
 
         # Run monitoring
         result = await task_tools._monitor_task_startup(project_id, task_id)
@@ -697,14 +663,12 @@ class TestTaskTools:
         ]
 
         # Mock outputs
-        mock_structured_output = {"output": "Task failed", "status": "error"}
         mock_raw_output = "TASK [test] failed: host unreachable"
 
         # Set up mocks
         task_tools.semaphore.get_task.return_value = mock_task
         task_tools.semaphore.get_template.return_value = mock_template
         task_tools.semaphore.list_projects.return_value = mock_projects
-        task_tools.semaphore.get_task_output.return_value = mock_structured_output
         task_tools.semaphore.get_task_raw_output.return_value = mock_raw_output
 
         # Call the method
@@ -723,9 +687,7 @@ class TestTaskTools:
         assert result["template_context"]["name"] == "Test Template"
 
         assert result["outputs"]["raw"] == mock_raw_output
-        assert result["outputs"]["structured"] == mock_structured_output
         assert result["outputs"]["has_raw_output"] is True
-        assert result["outputs"]["has_structured_output"] is True
 
         # Verify analysis guidance is included
         assert "analysis_guidance" in result
