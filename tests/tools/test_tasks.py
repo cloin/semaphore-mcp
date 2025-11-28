@@ -178,7 +178,18 @@ class TestTaskTools:
         assert "project_tasks" in result["web_urls"]
         assert f"#{mock_result['id']}" in result["message"]
         task_tools.semaphore.run_task.assert_called_once_with(
-            project_id, template_id, environment=environment
+            project_id,
+            template_id,
+            environment=environment,
+            limit=None,
+            dry_run=None,
+            diff=None,
+            debug=None,
+            playbook=None,
+            git_branch=None,
+            message=None,
+            arguments=None,
+            inventory_id=None,
         )
 
     @pytest.mark.asyncio
@@ -210,7 +221,18 @@ class TestTaskTools:
         task_tools.semaphore.list_projects.assert_called_once()
         task_tools.semaphore.list_templates.assert_called_once_with(project_id)
         task_tools.semaphore.run_task.assert_called_once_with(
-            project_id, template_id, environment=None
+            project_id,
+            template_id,
+            environment=None,
+            limit=None,
+            dry_run=None,
+            diff=None,
+            debug=None,
+            playbook=None,
+            git_branch=None,
+            message=None,
+            arguments=None,
+            inventory_id=None,
         )
 
     @pytest.mark.asyncio
@@ -374,7 +396,18 @@ class TestTaskTools:
 
         # Verify semaphore client was called
         task_tools.semaphore.run_task.assert_called_once_with(
-            project_id, template_id, environment=environment
+            project_id,
+            template_id,
+            environment=environment,
+            limit=None,
+            dry_run=None,
+            diff=None,
+            debug=None,
+            playbook=None,
+            git_branch=None,
+            message=None,
+            arguments=None,
+            inventory_id=None,
         )
 
         # Check the result structure for immediate URL response
@@ -432,7 +465,18 @@ class TestTaskTools:
 
         # Verify semaphore client and _monitor_task_startup were called
         task_tools.semaphore.run_task.assert_called_once_with(
-            project_id, template_id, environment=environment
+            project_id,
+            template_id,
+            environment=environment,
+            limit=None,
+            dry_run=None,
+            diff=None,
+            debug=None,
+            playbook=None,
+            git_branch=None,
+            message=None,
+            arguments=None,
+            inventory_id=None,
         )
         task_tools._monitor_task_startup.assert_called_once_with(project_id, task_id)
 

@@ -395,6 +395,15 @@ class SemaphoreAPIClient:
         project_id: int,
         template_id: int,
         environment: Optional[dict[str, str]] = None,
+        limit: Optional[str] = None,
+        dry_run: Optional[bool] = None,
+        diff: Optional[bool] = None,
+        debug: Optional[bool] = None,
+        playbook: Optional[str] = None,
+        git_branch: Optional[str] = None,
+        message: Optional[str] = None,
+        arguments: Optional[str] = None,
+        inventory_id: Optional[int] = None,
     ) -> dict[str, Any]:
         """
         Run a task using a template.
@@ -403,6 +412,15 @@ class SemaphoreAPIClient:
             project_id: Project ID
             template_id: Template ID
             environment: Optional environment variables for the task
+            limit: Restrict execution to specific hosts/groups (Ansible --limit)
+            dry_run: Run without making changes (Ansible --check)
+            diff: Show differences when changing files (Ansible --diff)
+            debug: Enable verbose debug output
+            playbook: Override playbook file path
+            git_branch: Override git branch to use
+            message: Task description/message
+            arguments: Additional CLI arguments
+            inventory_id: Override inventory to use
 
         Returns:
             Task information
@@ -410,6 +428,24 @@ class SemaphoreAPIClient:
         payload: dict[str, Any] = {"template_id": template_id}
         if environment:
             payload["environment"] = environment
+        if limit:
+            payload["limit"] = limit
+        if dry_run is not None:
+            payload["dry_run"] = dry_run
+        if diff is not None:
+            payload["diff"] = diff
+        if debug is not None:
+            payload["debug"] = debug
+        if playbook:
+            payload["playbook"] = playbook
+        if git_branch:
+            payload["git_branch"] = git_branch
+        if message:
+            payload["message"] = message
+        if arguments:
+            payload["arguments"] = arguments
+        if inventory_id is not None:
+            payload["inventory_id"] = inventory_id
 
         return self._request("POST", f"project/{project_id}/tasks", json=payload)
 

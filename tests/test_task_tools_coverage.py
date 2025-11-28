@@ -79,7 +79,20 @@ class TestTaskToolsCoverage:
 
         assert result["task"]["id"] == 10
         # Verify it found the project and ran the task
-        task_tools.semaphore.run_task.assert_called_once_with(1, 5, environment=None)
+        task_tools.semaphore.run_task.assert_called_once_with(
+            1,
+            5,
+            environment=None,
+            limit=None,
+            dry_run=None,
+            diff=None,
+            debug=None,
+            playbook=None,
+            git_branch=None,
+            message=None,
+            arguments=None,
+            inventory_id=None,
+        )
 
     @pytest.mark.asyncio
     async def test_run_task_project_lookup_with_dict_response(self, task_tools):
@@ -94,7 +107,20 @@ class TestTaskToolsCoverage:
         result = await task_tools.run_task(5)
 
         assert result["task"]["id"] == 10
-        task_tools.semaphore.run_task.assert_called_once_with(1, 5, environment=None)
+        task_tools.semaphore.run_task.assert_called_once_with(
+            1,
+            5,
+            environment=None,
+            limit=None,
+            dry_run=None,
+            diff=None,
+            debug=None,
+            playbook=None,
+            git_branch=None,
+            message=None,
+            arguments=None,
+            inventory_id=None,
+        )
 
     @pytest.mark.asyncio
     async def test_run_task_template_lookup_with_dict_response(self, task_tools):
@@ -363,7 +389,20 @@ class TestTaskToolsCoverage:
         assert "monitoring" in result
         assert result["monitoring"]["enabled"] is False
         # Verify semaphore client was called
-        task_tools.semaphore.run_task.assert_called_once_with(1, 5, environment=None)
+        task_tools.semaphore.run_task.assert_called_once_with(
+            1,
+            5,
+            environment=None,
+            limit=None,
+            dry_run=None,
+            diff=None,
+            debug=None,
+            playbook=None,
+            git_branch=None,
+            message=None,
+            arguments=None,
+            inventory_id=None,
+        )
 
     @pytest.mark.asyncio
     async def test_run_task_no_task_id(self, task_tools):
