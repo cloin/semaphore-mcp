@@ -206,6 +206,15 @@ class TaskTools(BaseTool):
         template_id: int,
         project_id: Optional[int] = None,
         environment: Optional[dict[str, str]] = None,
+        limit: Optional[str] = None,
+        dry_run: Optional[bool] = None,
+        diff: Optional[bool] = None,
+        debug: Optional[bool] = None,
+        playbook: Optional[str] = None,
+        git_branch: Optional[str] = None,
+        message: Optional[str] = None,
+        arguments: Optional[str] = None,
+        inventory_id: Optional[int] = None,
         follow: bool = False,
     ) -> dict[str, Any]:
         """Run a task from a template with optional 30-second monitoring.
@@ -214,6 +223,15 @@ class TaskTools(BaseTool):
             template_id: ID of the template to run
             project_id: Optional project ID (if not provided, will attempt to determine from template)
             environment: Optional environment variables for the task as dictionary
+            limit: Restrict execution to specific hosts/groups (Ansible --limit)
+            dry_run: Run without making changes (Ansible --check)
+            diff: Show differences when changing files (Ansible --diff)
+            debug: Enable verbose debug output
+            playbook: Override playbook file path
+            git_branch: Override git branch to use
+            message: Task description/message
+            arguments: Additional CLI arguments
+            inventory_id: Override inventory to use
             follow: Enable 30-second monitoring for startup verification (default: False)
 
         Returns:
@@ -225,6 +243,12 @@ class TaskTools(BaseTool):
 
             # Start task with 30-second monitoring and get URLs
             result = await run_task(template_id=5, follow=True)
+
+            # Run with limit to specific hosts
+            result = await run_task(template_id=5, limit="webservers")
+
+            # Dry run with diff to preview changes
+            result = await run_task(template_id=5, dry_run=True, diff=True)
         """
         try:
             # If project_id is not provided, we need to find it
@@ -280,7 +304,18 @@ class TaskTools(BaseTool):
             # Now run the task with the determined project_id
             try:
                 task_result = self.semaphore.run_task(
-                    project_id, template_id, environment=environment
+                    project_id,
+                    template_id,
+                    environment=environment,
+                    limit=limit,
+                    dry_run=dry_run,
+                    diff=diff,
+                    debug=debug,
+                    playbook=playbook,
+                    git_branch=git_branch,
+                    message=message,
+                    arguments=arguments,
+                    inventory_id=inventory_id,
                 )
 
                 # Extract task ID for URL generation
