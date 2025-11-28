@@ -4,8 +4,6 @@ Tests for the ProjectTools class functionality.
 
 import pytest
 
-from semaphore_mcp.tools.projects import ProjectTools
-
 
 class TestProjectTools:
     """Test suite for ProjectTools class methods."""

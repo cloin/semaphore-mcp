@@ -16,7 +16,6 @@ from semaphore_mcp.tools.repositories import RepositoryTools
 from semaphore_mcp.tools.tasks import TaskTools
 from semaphore_mcp.tools.templates import TemplateTools
 
-
 # =============================================================================
 # Mock API Client Fixtures
 # =============================================================================
