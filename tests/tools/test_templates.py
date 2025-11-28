@@ -2,10 +2,7 @@
 Tests for the TemplateTools class functionality.
 """
 
-from unittest.mock import MagicMock
-
 import pytest
-import pytest_asyncio
 
 from semaphore_mcp.tools.templates import TemplateTools
 
@@ -13,11 +10,7 @@ from semaphore_mcp.tools.templates import TemplateTools
 class TestTemplateTools:
     """Test suite for TemplateTools class methods."""
 
-    @pytest_asyncio.fixture
-    async def template_tools(self):
-        """Create a TemplateTools instance with a mock API client."""
-        mock_client = MagicMock()
-        return TemplateTools(mock_client)
+    # Note: template_tools fixture is provided by conftest.py
 
     @pytest.mark.asyncio
     async def test_list_templates(self, template_tools):

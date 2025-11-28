@@ -5,10 +5,7 @@ Tests cover repository operations with comprehensive CRUD testing
 including error handling scenarios.
 """
 
-from unittest.mock import MagicMock
-
 import pytest
-import pytest_asyncio
 
 from semaphore_mcp.tools.repositories import RepositoryTools
 
@@ -16,11 +13,7 @@ from semaphore_mcp.tools.repositories import RepositoryTools
 class TestRepositoryTools:
     """Test suite for RepositoryTools class methods."""
 
-    @pytest_asyncio.fixture
-    async def repository_tools(self):
-        """Create a RepositoryTools instance with a mock API client."""
-        mock_client = MagicMock()
-        return RepositoryTools(mock_client)
+    # Note: repository_tools fixture is provided by conftest.py
 
     @pytest.mark.asyncio
     async def test_list_repositories(self, repository_tools):
