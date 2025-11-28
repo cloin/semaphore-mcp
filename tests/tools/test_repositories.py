@@ -7,8 +7,6 @@ including error handling scenarios.
 
 import pytest
 
-from semaphore_mcp.tools.repositories import RepositoryTools
-
 
 class TestRepositoryTools:
     """Test suite for RepositoryTools class methods."""

@@ -4,8 +4,6 @@ Tests for the TemplateTools class functionality.
 
 import pytest
 
-from semaphore_mcp.tools.templates import TemplateTools
-
 
 class TestTemplateTools:
     """Test suite for TemplateTools class methods."""

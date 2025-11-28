@@ -7,8 +7,6 @@ CRUD testing including error handling scenarios.
 
 import pytest
 
-from semaphore_mcp.tools.environments import EnvironmentTools
-
 
 class TestEnvironmentTools:
     """Test suite for EnvironmentTools class methods."""

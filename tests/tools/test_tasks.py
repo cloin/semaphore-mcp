@@ -5,10 +5,7 @@ Tests for the TaskTools class functionality.
 from unittest.mock import AsyncMock, MagicMock, Mock
 
 import pytest
-import pytest_asyncio
 import requests
-
-from semaphore_mcp.tools.tasks import TaskTools
 
 
 class TestTaskTools:
