@@ -72,8 +72,19 @@ jobs:
 
       - name: Get previous tag
         id: get_previous_tag
+        env:
+          CURRENT_VERSION: ${{ inputs.version }}
         run: |
-          PREVIOUS_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          # Detect if current version is a stable release (no prerelease suffix)
+          if [[ "$CURRENT_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Current version is a stable release, finding last stable tag..."
+            # Find the last stable tag (exclude prerelease tags)
+            PREVIOUS_TAG=$(git tag --list --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1)
+          else
+            echo "Current version is a prerelease, finding last tag..."
+            # For prereleases, use the most recent tag
+            PREVIOUS_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          fi
           echo "tag=${PREVIOUS_TAG}" >> $GITHUB_OUTPUT
           echo "Previous tag: ${PREVIOUS_TAG:-none}"
 
