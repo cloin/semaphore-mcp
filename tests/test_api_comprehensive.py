@@ -17,12 +17,15 @@ class TestSemaphoreAPIClientComprehensive:
 
     @pytest.fixture
     def mock_client(self):
-        """Create a mock API client for testing."""
+        """Create a real API client instance for testing."""
         return SemaphoreAPIClient("http://test.example.com", "test-token")
+
+    # Note: mock_http_response and mock_empty_response fixtures are available from conftest.py
+    # We use inline fixtures here because these tests need specific response configurations
 
     @pytest.fixture
     def mock_response(self):
-        """Create a mock response object."""
+        """Create a mock response object with success data."""
         response = Mock()
         response.status_code = 200
         response.content = b'{"result": "success"}'
@@ -31,13 +34,9 @@ class TestSemaphoreAPIClientComprehensive:
         return response
 
     @pytest.fixture
-    def empty_response(self):
-        """Create a mock empty response object."""
-        response = Mock()
-        response.status_code = 204
-        response.content = b""
-        response.raise_for_status.return_value = None
-        return response
+    def empty_response(self, mock_empty_response):
+        """Use shared empty response fixture."""
+        return mock_empty_response
 
     def test_request_empty_response(self, mock_client, empty_response):
         """Test _request method with empty response content."""

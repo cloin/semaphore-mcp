@@ -5,22 +5,13 @@ Tests cover both environment and inventory operations with comprehensive
 CRUD testing including error handling scenarios.
 """
 
-from unittest.mock import MagicMock
-
 import pytest
-import pytest_asyncio
-
-from semaphore_mcp.tools.environments import EnvironmentTools
 
 
 class TestEnvironmentTools:
     """Test suite for EnvironmentTools class methods."""
 
-    @pytest_asyncio.fixture
-    async def environment_tools(self):
-        """Create an EnvironmentTools instance with a mock API client."""
-        mock_client = MagicMock()
-        return EnvironmentTools(mock_client)
+    # Note: environment_tools fixture is provided by conftest.py
 
     @pytest.mark.asyncio
     async def test_list_environments(self, environment_tools):
