@@ -2,22 +2,13 @@
 Tests for the ProjectTools class functionality.
 """
 
-from unittest.mock import MagicMock
-
 import pytest
-import pytest_asyncio
-
-from semaphore_mcp.tools.projects import ProjectTools
 
 
 class TestProjectTools:
     """Test suite for ProjectTools class methods."""
 
-    @pytest_asyncio.fixture
-    async def project_tools(self):
-        """Create a ProjectTools instance with a mock API client."""
-        mock_client = MagicMock()
-        return ProjectTools(mock_client)
+    # Note: project_tools fixture is provided by conftest.py
 
     @pytest.mark.asyncio
     async def test_list_projects(self, project_tools):

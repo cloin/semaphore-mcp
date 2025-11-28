@@ -5,20 +5,13 @@ Tests for the TaskTools class functionality.
 from unittest.mock import AsyncMock, MagicMock, Mock
 
 import pytest
-import pytest_asyncio
 import requests
-
-from semaphore_mcp.tools.tasks import TaskTools
 
 
 class TestTaskTools:
     """Test suite for TaskTools class methods."""
 
-    @pytest_asyncio.fixture
-    async def task_tools(self):
-        """Create a TaskTools instance with a mock API client."""
-        mock_client = MagicMock()
-        return TaskTools(mock_client)
+    # Note: task_tools fixture is now provided by conftest.py
 
     @pytest.mark.asyncio
     async def test_list_tasks(self, task_tools):
@@ -319,32 +312,28 @@ class TestTaskTools:
     @pytest.mark.asyncio
     async def test_get_waiting_tasks(self, task_tools):
         """Test getting waiting tasks for bulk operations."""
-        # Mock the filter_tasks method instead of the underlying API call
-        waiting_tasks = [
+        # Mock the underlying API call (not the internal filter_tasks method)
+        # This ensures we test the actual get_waiting_tasks implementation
+        all_tasks = [
             {"id": 1, "created": "2023-06-01", "status": "waiting"},
+            {"id": 2, "created": "2023-06-02", "status": "success"},
             {"id": 3, "created": "2023-06-03", "status": "waiting"},
         ]
-        filter_result = {
-            "tasks": waiting_tasks,
-            "statistics": {"total_tasks": 3},
-            "note": "Test filter result",
-        }
-
-        # Create a mock for filter_tasks that returns our predefined result
-        task_tools.filter_tasks = AsyncMock(return_value=filter_result)
+        task_tools.semaphore.get_last_tasks.return_value = all_tasks
 
         result = await task_tools.get_waiting_tasks(1)
 
-        # Verify filter_tasks was called with the right parameters
-        task_tools.filter_tasks.assert_called_once_with(
-            1, status=["waiting"], limit=100
-        )
+        # Verify API was called
+        task_tools.semaphore.get_last_tasks.assert_called_once_with(1)
 
-        # Check the result contains the expected data
+        # Check the result contains the expected data - only waiting tasks
         assert "waiting_tasks" in result
         assert len(result["waiting_tasks"]) == 2
         assert result["count"] == 2
         assert "bulk_operations" in result
+        # Verify only waiting tasks are returned
+        for task in result["waiting_tasks"]:
+            assert task["status"] == "waiting"
 
     @pytest.mark.asyncio
     async def test_run_task_no_follow(self, task_tools):
@@ -797,3 +786,98 @@ class TestTaskTools:
         assert "message" in result
         assert "No failed tasks found" in result["message"]
         assert result["failed_task_count"] == 0
+
+
+class TestTaskToolsEdgeCases:
+    """Edge case tests for TaskTools class methods."""
+
+    # Note: task_tools fixture is provided by conftest.py
+
+    @pytest.mark.asyncio
+    async def test_build_task_url_with_api_suffix(self, task_tools):
+        """Test URL building correctly removes /api suffix."""
+        task_tools.semaphore.base_url = "http://example.com/api/"
+        url = task_tools._build_task_url(1, 42)
+        assert url == "http://example.com/project/1/history?t=42"
+
+    @pytest.mark.asyncio
+    async def test_build_task_url_without_api_suffix(self, task_tools):
+        """Test URL building when no /api suffix present."""
+        task_tools.semaphore.base_url = "http://example.com"
+        url = task_tools._build_task_url(1, 42)
+        assert url == "http://example.com/project/1/history?t=42"
+
+    @pytest.mark.asyncio
+    async def test_build_task_url_with_trailing_slash(self, task_tools):
+        """Test URL building with trailing slash in base URL."""
+        task_tools.semaphore.base_url = "http://example.com/"
+        url = task_tools._build_task_url(1, 42)
+        assert url == "http://example.com/project/1/history?t=42"
+
+    @pytest.mark.asyncio
+    async def test_build_project_tasks_url_with_api_suffix(self, task_tools):
+        """Test project tasks URL building removes /api suffix."""
+        task_tools.semaphore.base_url = "http://example.com/api"
+        url = task_tools._build_project_tasks_url(1)
+        assert url == "http://example.com/project/1/history"
+
+    @pytest.mark.asyncio
+    async def test_list_tasks_empty_response(self, task_tools):
+        """Test handling of empty task list from API."""
+        task_tools.semaphore.list_tasks.return_value = []
+        result = await task_tools.list_tasks(1)
+
+        assert result["total"] == 0
+        assert result["shown"] == 0
+        assert result["tasks"] == []
+        assert "Showing 0 of 0 tasks" in result["note"]
+
+    @pytest.mark.asyncio
+    async def test_list_tasks_dict_response_with_empty_tasks(self, task_tools):
+        """Test handling of dict response with empty tasks key."""
+        task_tools.semaphore.list_tasks.return_value = {"tasks": []}
+        result = await task_tools.list_tasks(1)
+
+        assert result["total"] == 0
+        assert result["tasks"] == []
+
+    @pytest.mark.asyncio
+    async def test_filter_tasks_empty_response(self, task_tools):
+        """Test filtering with empty task list."""
+        task_tools.semaphore.get_last_tasks.return_value = []
+        result = await task_tools.filter_tasks(1, status=["success"], limit=10)
+
+        assert result["tasks"] == []
+        assert result["statistics"]["total_tasks"] == 0
+        assert result["statistics"]["filtered_tasks"] == 0
+
+    @pytest.mark.asyncio
+    async def test_get_waiting_tasks_no_waiting(self, task_tools):
+        """Test get_waiting_tasks when no tasks are in waiting state."""
+        all_tasks = [
+            {"id": 1, "created": "2023-06-01", "status": "success"},
+            {"id": 2, "created": "2023-06-02", "status": "error"},
+        ]
+        task_tools.semaphore.get_last_tasks.return_value = all_tasks
+
+        result = await task_tools.get_waiting_tasks(1)
+
+        assert result["message"] == "No tasks in waiting state found"
+        assert result["waiting_tasks"] == []
+
+    @pytest.mark.asyncio
+    async def test_get_latest_failed_task_dict_response(self, task_tools):
+        """Test get_latest_failed_task with dict response format."""
+        mock_tasks_dict = {
+            "tasks": [
+                {"id": 1, "created": "2023-06-01", "status": "error"},
+                {"id": 2, "created": "2023-06-02", "status": "success"},
+            ]
+        }
+        task_tools.semaphore.list_tasks.return_value = mock_tasks_dict
+
+        result = await task_tools.get_latest_failed_task(1)
+
+        assert "task" in result
+        assert result["task"]["id"] == 1
+        assert result["task"]["status"] == "error"
