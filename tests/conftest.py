@@ -10,6 +10,7 @@ from unittest.mock import MagicMock, Mock
 import pytest
 import pytest_asyncio
 
+from semaphore_mcp.tools.access_keys import AccessKeyTools
 from semaphore_mcp.tools.environments import EnvironmentTools
 from semaphore_mcp.tools.projects import ProjectTools
 from semaphore_mcp.tools.repositories import RepositoryTools
@@ -60,6 +61,12 @@ async def environment_tools(mock_semaphore_client):
 async def repository_tools(mock_semaphore_client):
     """Create a RepositoryTools instance with a mock API client."""
     return RepositoryTools(mock_semaphore_client)
+
+
+@pytest_asyncio.fixture
+async def access_key_tools(mock_semaphore_client):
+    """Create an AccessKeyTools instance with a mock API client."""
+    return AccessKeyTools(mock_semaphore_client)
 
 
 # =============================================================================
@@ -187,5 +194,30 @@ def sample_inventory():
             "project_id": 1,
             "type": "file",
             "inventory": "[databases]\n192.168.1.20\n192.168.1.21",
+        },
+    ]
+
+
+@pytest.fixture
+def sample_access_keys():
+    """Standard access key list for testing."""
+    return [
+        {
+            "id": 1,
+            "name": "None Key",
+            "project_id": 1,
+            "type": "none",
+        },
+        {
+            "id": 2,
+            "name": "SSH Key",
+            "project_id": 1,
+            "type": "ssh",
+        },
+        {
+            "id": 3,
+            "name": "Login Key",
+            "project_id": 1,
+            "type": "login_password",
         },
     ]
