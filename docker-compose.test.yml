@@ -1,0 +1,48 @@
+services:
+  semaphore:
+    image: semaphoreui/semaphore:latest
+    container_name: semaphore-test
+    ports:
+      - "3000:3000"
+    environment:
+      SEMAPHORE_DB_DIALECT: bolt
+      SEMAPHORE_ADMIN_PASSWORD: ${SEMAPHORE_ADMIN_PASSWORD:-changeme123}
+      SEMAPHORE_ADMIN_NAME: ${SEMAPHORE_ADMIN_NAME:-admin}
+      SEMAPHORE_ADMIN_EMAIL: ${SEMAPHORE_ADMIN_EMAIL:-admin@localhost}
+      SEMAPHORE_ADMIN: ${SEMAPHORE_ADMIN_NAME:-admin}
+      SEMAPHORE_ACCESS_KEY_ENCRYPTION: ${SEMAPHORE_ACCESS_KEY_ENCRYPTION:-gs72mPntFATGJs9qK0pQ0rKtfidlexiMjYCH9gWKhTU=}
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:3000/api/ping"]
+      interval: 5s
+      timeout: 10s
+      retries: 30
+      start_period: 45s
+    networks:
+      - semaphore-test-network
+
+  semaphore-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: semaphore-mcp-test
+    ports:
+      - "8000:8000"
+    environment:
+      SEMAPHORE_URL: http://semaphore:3000
+      SEMAPHORE_API_TOKEN: ${SEMAPHORE_API_TOKEN}
+      MCP_PORT: "8000"
+    depends_on:
+      semaphore:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; s=socket.socket(); s.connect(('localhost', 8000)); s.close()"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+    networks:
+      - semaphore-test-network
+
+networks:
+  semaphore-test-network:
+    driver: bridge

@@ -151,7 +151,8 @@ jobs:
           cat .env | sed 's/\(SEMAPHORE_API_TOKEN=\)\(.*\)/\1\2.../'
 
           # Run tests with coverage reporting and verbose output
-          pytest tests/ -v --cov=src/semaphore_mcp --cov-report=term-missing --cov-report=xml --cov-fail-under=80
+          # Exclude e2e tests as they require the MCP server running (tested in test-mcp-integration.yml)
+          pytest tests/ -v --ignore=tests/e2e --cov=src/semaphore_mcp --cov-report=term-missing --cov-report=xml --cov-fail-under=80
         env:
           SEMAPHORE_URL: http://localhost:3000
           # Use the token from previous step
