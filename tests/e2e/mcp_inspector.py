@@ -89,7 +89,13 @@ class MCPInspector:
         if arguments:
             for key, value in arguments.items():
                 # Convert value to string for CLI
-                args.extend(["--tool-arg", f"{key}={json.dumps(value)}"])
+                # Use json.dumps for complex types (dict, list, bool, None)
+                # but keep strings as-is to avoid double-quoting
+                if isinstance(value, str):
+                    str_value = value
+                else:
+                    str_value = json.dumps(value)
+                args.extend(["--tool-arg", f"{key}={str_value}"])
 
         return self._run_inspector(args)
 

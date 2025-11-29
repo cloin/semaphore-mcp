@@ -70,8 +70,9 @@ class TestTasksE2E:
         result = inspector.call_tool("get_waiting_tasks", {"project_id": project_id})
         data = parse_mcp_response(result)
 
-        assert "tasks" in data
-        assert isinstance(data["tasks"], list)
+        # Response contains waiting_tasks key
+        assert "waiting_tasks" in data
+        assert isinstance(data["waiting_tasks"], list)
 
     @pytest.mark.skip(reason="Requires template to be created first")
     def test_run_task(self, inspector: MCPInspector, created_project: dict):
