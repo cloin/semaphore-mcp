@@ -427,7 +427,8 @@ class SemaphoreAPIClient:
         """
         payload: dict[str, Any] = {"template_id": template_id}
         if environment:
-            payload["environment"] = environment
+            # Semaphore API expects environment as a JSON string, not a dict
+            payload["environment"] = json.dumps(environment)
         if limit:
             payload["limit"] = limit
         if dry_run is not None:

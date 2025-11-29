@@ -15,9 +15,11 @@ from mcp_inspector import MCPInspector  # noqa: E402
 class TestTemplatesE2E:
     """E2E tests for template CRUD operations.
 
-    Note: Template operations require environment, inventory, and repository
-    to be configured first. Most tests are skipped by default as they require
-    a more complete project setup.
+    These tests use fixtures that set up the required dependencies:
+    - created_environment: provides an environment
+    - created_inventory: provides an inventory
+    - created_repository: provides a repository with access key
+    - created_template: provides a fully configured template
     """
 
     def test_list_templates(self, inspector: MCPInspector, created_project: dict):
@@ -30,25 +32,19 @@ class TestTemplatesE2E:
         assert "templates" in data
         assert isinstance(data["templates"], list)
 
-    @pytest.mark.skip(
-        reason="Requires environment, inventory, and repository to be created first"
-    )
     def test_create_and_delete_template(
-        self, inspector: MCPInspector, created_project: dict
+        self,
+        inspector: MCPInspector,
+        created_project: dict,
+        created_environment: tuple,
+        created_inventory: tuple,
+        created_repository: tuple,
     ):
-        """Test creating and deleting a template.
-
-        This test is skipped because templates require:
-        - An environment
-        - An inventory
-        - A repository
-
-        All of which must exist before creating a template.
-        """
+        """Test creating and deleting a template."""
         project_id = created_project["id"]
-        environment_id = 1  # Would need to create first
-        inventory_id = 1  # Would need to create first
-        repository_id = 1  # Would need to create first
+        environment, _ = created_environment
+        inventory, _ = created_inventory
+        repository, _ = created_repository
 
         # Create
         create_result = inspector.call_tool(
@@ -56,10 +52,10 @@ class TestTemplatesE2E:
             {
                 "project_id": project_id,
                 "name": "E2E Create Test Template",
-                "playbook": "playbook.yml",
-                "environment_id": environment_id,
-                "inventory_id": inventory_id,
-                "repository_id": repository_id,
+                "playbook": "test.yml",
+                "environment_id": environment["id"],
+                "inventory_id": inventory["id"],
+                "repository_id": repository["id"],
             },
         )
         template = parse_mcp_response(create_result)
@@ -76,66 +72,71 @@ class TestTemplatesE2E:
         )
         assert delete_result is not None
 
-    @pytest.mark.skip(reason="Requires template to be created first")
-    def test_get_template(self, inspector: MCPInspector, created_project: dict):
+    def test_get_template(self, inspector: MCPInspector, created_template: tuple):
         """Test getting a specific template."""
-        project_id = created_project["id"]
-        template_id = 1  # Would need to create first
+        template, project_id = created_template
 
         result = inspector.call_tool(
             "get_template",
-            {"project_id": project_id, "template_id": template_id},
+            {"project_id": project_id, "template_id": template["id"]},
         )
         data = parse_mcp_response(result)
 
-        assert data["id"] == template_id
+        assert data["id"] == template["id"]
         assert "name" in data
 
-    @pytest.mark.skip(reason="Requires template to be created first")
-    def test_update_template(self, inspector: MCPInspector, created_project: dict):
+    def test_update_template(self, inspector: MCPInspector, created_template: tuple):
         """Test updating a template."""
-        project_id = created_project["id"]
-        template_id = 1  # Would need to create first
+        template, project_id = created_template
 
         result = inspector.call_tool(
             "update_template",
             {
                 "project_id": project_id,
-                "template_id": template_id,
+                "template_id": template["id"],
                 "name": "E2E Updated Template",
                 "description": "Updated description",
             },
         )
         assert result is not None
 
-    @pytest.mark.skip(reason="Requires template to be created first")
+        # Verify the update
+        get_result = inspector.call_tool(
+            "get_template",
+            {"project_id": project_id, "template_id": template["id"]},
+        )
+        updated = parse_mcp_response(get_result)
+        assert updated["name"] == "E2E Updated Template"
+
     def test_stop_all_template_tasks(
-        self, inspector: MCPInspector, created_project: dict
+        self, inspector: MCPInspector, created_template: tuple
     ):
-        """Test stopping all tasks for a template."""
-        project_id = created_project["id"]
-        template_id = 1  # Would need to create first
+        """Test stopping all tasks for a template.
+
+        Note: This just tests that the endpoint responds, even if there are no tasks.
+        """
+        template, project_id = created_template
 
         result = inspector.call_tool(
             "stop_all_template_tasks",
-            {"project_id": project_id, "template_id": template_id},
+            {"project_id": project_id, "template_id": template["id"]},
         )
+        # The result could indicate no tasks to stop, which is fine
         assert result is not None
 
-    @pytest.mark.skip(
-        reason="Requires environment, inventory, and repository to be created first"
-    )
     def test_template_crud_workflow(
-        self, inspector: MCPInspector, created_project: dict
+        self,
+        inspector: MCPInspector,
+        created_project: dict,
+        created_environment: tuple,
+        created_inventory: tuple,
+        created_repository: tuple,
     ):
-        """Test complete template CRUD workflow.
-
-        This test is skipped because templates require dependent resources.
-        """
+        """Test complete template CRUD workflow."""
         project_id = created_project["id"]
-        environment_id = 1
-        inventory_id = 1
-        repository_id = 1
+        environment, _ = created_environment
+        inventory, _ = created_inventory
+        repository, _ = created_repository
 
         # Create
         create_result = inspector.call_tool(
@@ -143,10 +144,10 @@ class TestTemplatesE2E:
             {
                 "project_id": project_id,
                 "name": "E2E CRUD Workflow Template",
-                "playbook": "site.yml",
-                "environment_id": environment_id,
-                "inventory_id": inventory_id,
-                "repository_id": repository_id,
+                "playbook": "test.yml",
+                "environment_id": environment["id"],
+                "inventory_id": inventory["id"],
+                "repository_id": repository["id"],
                 "description": "E2E test template",
             },
         )
