@@ -57,11 +57,11 @@ jobs:
 
       - name: Build Docker images
         run: |
-          docker-compose -f docker-compose.test.yml build --build-arg BUILDKIT_INLINE_CACHE=1
+          docker compose -f docker-compose.test.yml build --build-arg BUILDKIT_INLINE_CACHE=1
 
       - name: Start Semaphore container
         run: |
-          docker-compose -f docker-compose.test.yml up -d semaphore
+          docker compose -f docker-compose.test.yml up -d semaphore
 
       - name: Wait for Semaphore to be ready
         run: |
@@ -88,7 +88,7 @@ jobs:
 
           if [ "$LOGIN_STATUS" != "204" ]; then
             echo "Failed to login to Semaphore (HTTP $LOGIN_STATUS)"
-            docker-compose -f docker-compose.test.yml logs semaphore
+            docker compose -f docker-compose.test.yml logs semaphore
             exit 1
           fi
 
@@ -114,7 +114,7 @@ jobs:
 
       - name: Start MCP server container
         run: |
-          docker-compose -f docker-compose.test.yml up -d semaphore-mcp
+          docker compose -f docker-compose.test.yml up -d semaphore-mcp
 
       - name: Wait for MCP server to be ready
         run: |
@@ -132,8 +132,8 @@ jobs:
 
       - name: Verify MCP server is running
         run: |
-          docker-compose -f docker-compose.test.yml ps
-          docker-compose -f docker-compose.test.yml logs semaphore-mcp
+          docker compose -f docker-compose.test.yml ps
+          docker compose -f docker-compose.test.yml logs semaphore-mcp
 
       - name: Install MCP Inspector
         run: |
@@ -166,15 +166,15 @@ jobs:
         if: failure()
         run: |
           echo "=== Semaphore Logs ==="
-          docker-compose -f docker-compose.test.yml logs --tail=100 semaphore
+          docker compose -f docker-compose.test.yml logs --tail=100 semaphore
           echo ""
           echo "=== MCP Server Logs ==="
-          docker-compose -f docker-compose.test.yml logs --tail=100 semaphore-mcp
+          docker compose -f docker-compose.test.yml logs --tail=100 semaphore-mcp
 
       - name: Cleanup
         if: always()
         run: |
-          docker-compose -f docker-compose.test.yml down -v
+          docker compose -f docker-compose.test.yml down -v
 
   test-summary:
     name: E2E Test Summary
