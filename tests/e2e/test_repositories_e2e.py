@@ -15,10 +15,8 @@ from mcp_inspector import MCPInspector  # noqa: E402
 class TestRepositoriesE2E:
     """E2E tests for repository CRUD operations.
 
-    Note: Repository operations require an SSH key ID for authentication.
-    In a real E2E test environment, you would need to create a key store
-    entry first. For basic testing, we test list operations and skip
-    create/update tests that require SSH keys.
+    These tests use the created_access_key fixture which provides a 'none' type
+    access key suitable for public repositories.
     """
 
     def test_list_repositories(self, inspector: MCPInspector, created_project: dict):
@@ -31,17 +29,12 @@ class TestRepositoriesE2E:
         assert "repositories" in data
         assert isinstance(data["repositories"], list)
 
-    @pytest.mark.skip(reason="Requires SSH key ID to be created first")
     def test_create_and_delete_repository(
-        self, inspector: MCPInspector, created_project: dict
+        self, inspector: MCPInspector, created_project: dict, created_access_key: tuple
     ):
-        """Test creating and deleting a repository.
-
-        This test is skipped by default because it requires an SSH key
-        to be configured in the project first.
-        """
+        """Test creating and deleting a repository."""
         project_id = created_project["id"]
-        ssh_key_id = 1  # Would need to create a key store entry first
+        access_key, _ = created_access_key
 
         # Create
         create_result = inspector.call_tool(
@@ -49,9 +42,9 @@ class TestRepositoriesE2E:
             {
                 "project_id": project_id,
                 "name": "E2E Create Test Repository",
-                "git_url": "https://github.com/example/test-repo.git",
+                "git_url": "https://github.com/cloin/ansible-test",
                 "git_branch": "main",
-                "ssh_key_id": ssh_key_id,
+                "ssh_key_id": access_key["id"],
             },
         )
         repository = parse_mcp_response(create_result)
@@ -68,55 +61,50 @@ class TestRepositoriesE2E:
         )
         assert delete_result is not None
 
-    @pytest.mark.skip(reason="Requires SSH key ID to be created first")
-    def test_get_repository(self, inspector: MCPInspector, created_project: dict):
-        """Test getting a specific repository.
-
-        This test is skipped because it requires a repository to exist first.
-        """
-        project_id = created_project["id"]
-        repository_id = 1  # Would need to create a repository first
+    def test_get_repository(self, inspector: MCPInspector, created_repository: tuple):
+        """Test getting a specific repository."""
+        repository, project_id = created_repository
 
         result = inspector.call_tool(
             "get_repository",
-            {"project_id": project_id, "repository_id": repository_id},
+            {"project_id": project_id, "repository_id": repository["id"]},
         )
         data = parse_mcp_response(result)
 
-        assert data["id"] == repository_id
+        assert data["id"] == repository["id"]
         assert "name" in data
 
-    @pytest.mark.skip(reason="Requires SSH key ID to be created first")
-    def test_update_repository(self, inspector: MCPInspector, created_project: dict):
-        """Test updating a repository.
-
-        This test is skipped because it requires a repository to exist first.
-        """
-        project_id = created_project["id"]
-        repository_id = 1  # Would need to create a repository first
+    def test_update_repository(
+        self, inspector: MCPInspector, created_repository: tuple
+    ):
+        """Test updating a repository."""
+        repository, project_id = created_repository
 
         result = inspector.call_tool(
             "update_repository",
             {
                 "project_id": project_id,
-                "repository_id": repository_id,
+                "repository_id": repository["id"],
                 "name": "E2E Updated Repository",
-                "git_branch": "develop",
+                "git_branch": "main",  # Keep same branch since we're using a real repo
             },
         )
         assert result is not None
 
-    @pytest.mark.skip(reason="Requires SSH key ID to be created first")
-    def test_repository_crud_workflow(
-        self, inspector: MCPInspector, created_project: dict
-    ):
-        """Test complete repository CRUD workflow.
+        # Verify the update
+        get_result = inspector.call_tool(
+            "get_repository",
+            {"project_id": project_id, "repository_id": repository["id"]},
+        )
+        updated = parse_mcp_response(get_result)
+        assert updated["name"] == "E2E Updated Repository"
 
-        This test is skipped because repository operations require
-        SSH key configuration which involves creating key store entries.
-        """
+    def test_repository_crud_workflow(
+        self, inspector: MCPInspector, created_project: dict, created_access_key: tuple
+    ):
+        """Test complete repository CRUD workflow."""
         project_id = created_project["id"]
-        ssh_key_id = 1  # Would need to create first
+        access_key, _ = created_access_key
 
         # Create
         create_result = inspector.call_tool(
@@ -124,9 +112,9 @@ class TestRepositoriesE2E:
             {
                 "project_id": project_id,
                 "name": "E2E CRUD Workflow Repository",
-                "git_url": "https://github.com/example/workflow-repo.git",
+                "git_url": "https://github.com/cloin/ansible-test",
                 "git_branch": "main",
-                "ssh_key_id": ssh_key_id,
+                "ssh_key_id": access_key["id"],
             },
         )
         repository = parse_mcp_response(create_result)
@@ -149,7 +137,7 @@ class TestRepositoriesE2E:
                     "project_id": project_id,
                     "repository_id": repository_id,
                     "name": "E2E CRUD Updated Repo",
-                    "git_branch": "develop",
+                    "git_branch": "main",
                 },
             )
 

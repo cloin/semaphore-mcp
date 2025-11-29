@@ -122,6 +122,8 @@ class TestSemaphoreAPIClientComprehensive:
 
     def test_run_task_with_environment(self, mock_client):
         """Test run_task method with environment variables."""
+        import json
+
         mock_response = {"id": 1, "status": "started"}
         environment = {"VAR1": "value1", "VAR2": "value2"}
         with patch.object(
@@ -129,11 +131,12 @@ class TestSemaphoreAPIClientComprehensive:
         ) as mock_request:
             result = mock_client.run_task(1, 1, environment)
             assert result == mock_response
-            # Verify environment was passed in payload
+            # Verify environment was passed in payload as JSON string
             mock_request.assert_called_once()
             args, kwargs = mock_request.call_args
             assert "json" in kwargs
-            assert kwargs["json"]["environment"] == environment
+            # Semaphore API expects environment as JSON string
+            assert kwargs["json"]["environment"] == json.dumps(environment)
 
     def test_stop_task(self, mock_client):
         """Test stop_task method."""
