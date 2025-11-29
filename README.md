@@ -175,7 +175,9 @@ docker run -d --name semaphore-mcp \
 
 ## Development
 
-For local development, Python installation, testing, and contributing, see [DEVELOPMENT.md](DEVELOPMENT.md).
+For local development and contributing, see [DEVELOPMENT.md](DEVELOPMENT.md).
+
+For testing documentation (unit tests, E2E tests, CI/CD), see [TESTING.md](TESTING.md).
 
 ## Resources
 
