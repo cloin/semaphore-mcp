@@ -102,29 +102,20 @@ Then:
 
 ## Testing
 
+For comprehensive testing documentation, see [TESTING.md](TESTING.md).
+
+**Quick commands:**
+
 ```bash
-# Run all tests
-pytest
+# Run unit tests
+uv run pytest tests/ --ignore=tests/e2e/ -v
 
-# Run with verbose output
-pytest -v
-
-# Run specific test file
-pytest tests/test_api_client.py
+# Run E2E tests (requires Docker)
+./scripts/run-e2e-tests.sh
 
 # Run with coverage
-pytest --cov=semaphore_mcp
+uv run pytest --cov=semaphore_mcp --cov-report=term-missing
 ```
-
-### Test Coverage
-
-The project includes tests for:
-- Project operations (CRUD)
-- Template operations (list, get)
-- Task operations (CRUD, monitoring, bulk operations, failure analysis)
-- Environment operations (CRUD)
-- Inventory operations (CRUD)
-- Error handling scenarios
 
 ## Code Quality
 

@@ -1,0 +1,193 @@
+name: MCP Integration Tests
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  e2e-tests:
+    name: End-to-End MCP Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-e2e-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-e2e-
+
+      - name: Generate Semaphore credentials
+        id: semaphore-creds
+        run: |
+          # Generate random password
+          PASSWORD=$(openssl rand -base64 16)
+          echo "SEMAPHORE_ADMIN_PASSWORD=$PASSWORD" >> $GITHUB_ENV
+          echo "SEMAPHORE_ADMIN_NAME=admin" >> $GITHUB_ENV
+          echo "SEMAPHORE_ADMIN_EMAIL=admin@localhost" >> $GITHUB_ENV
+          echo "::add-mask::$PASSWORD"
+
+      - name: Build Docker images
+        run: |
+          docker-compose -f docker-compose.test.yml build --build-arg BUILDKIT_INLINE_CACHE=1
+
+      - name: Start Semaphore container
+        run: |
+          docker-compose -f docker-compose.test.yml up -d semaphore
+
+      - name: Wait for Semaphore to be ready
+        run: |
+          echo "Waiting for Semaphore to start..."
+          for i in {1..30}; do
+            if curl -sf http://localhost:3000/api/ping > /dev/null 2>&1; then
+              echo "Semaphore is ready!"
+              break
+            fi
+            echo "Attempt $i/30..."
+            sleep 2
+          done
+
+      - name: Generate Semaphore API token
+        id: generate-token
+        run: |
+          sleep 2  # Give Semaphore a moment to fully initialize
+          COOKIE_FILE=$(mktemp)
+
+          # Login to get session cookie (returns 204 with Set-Cookie header)
+          LOGIN_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -c "$COOKIE_FILE" -X POST http://localhost:3000/api/auth/login \
+            -H "Content-Type: application/json" \
+            -d "{\"auth\": \"$SEMAPHORE_ADMIN_NAME\", \"password\": \"$SEMAPHORE_ADMIN_PASSWORD\"}")
+
+          if [ "$LOGIN_STATUS" != "204" ]; then
+            echo "Failed to login to Semaphore (HTTP $LOGIN_STATUS)"
+            docker-compose -f docker-compose.test.yml logs semaphore
+            exit 1
+          fi
+
+          echo "Login successful"
+
+          # Create API token using session cookie
+          TOKEN_RESPONSE=$(curl -s -b "$COOKIE_FILE" -X POST http://localhost:3000/api/user/tokens \
+            -H "Content-Type: application/json")
+
+          # Extract token ID from response
+          TOKEN=$(echo "$TOKEN_RESPONSE" | grep -o '"id":"[^"]*"' | cut -d'"' -f4)
+
+          if [ -z "$TOKEN" ]; then
+            echo "Failed to extract token"
+            echo "Response: $TOKEN_RESPONSE"
+            exit 1
+          fi
+
+          rm -f "$COOKIE_FILE"
+          echo "SEMAPHORE_API_TOKEN=$TOKEN" >> $GITHUB_ENV
+          echo "::add-mask::$TOKEN"
+          echo "Token generated successfully"
+
+      - name: Start MCP server container
+        run: |
+          docker-compose -f docker-compose.test.yml up -d semaphore-mcp
+
+      - name: Wait for MCP server to be ready
+        run: |
+          echo "Waiting for MCP server to start..."
+          for i in {1..30}; do
+            # MCP server returns 404 on root, so accept any HTTP response
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8000 2>/dev/null || echo "000")
+            if [[ "$HTTP_CODE" =~ ^[0-9]+$ ]] && [ "$HTTP_CODE" != "000" ]; then
+              echo "MCP server is ready! (HTTP $HTTP_CODE)"
+              break
+            fi
+            echo "Attempt $i/30..."
+            sleep 2
+          done
+
+      - name: Verify MCP server is running
+        run: |
+          docker-compose -f docker-compose.test.yml ps
+          docker-compose -f docker-compose.test.yml logs semaphore-mcp
+
+      - name: Install MCP Inspector
+        run: |
+          # Pre-install to avoid timeout during tests
+          npx @modelcontextprotocol/inspector --version || true
+
+      - name: Run Tool Registration Test
+        env:
+          MCP_SERVER_URL: http://localhost:8000
+        run: |
+          echo "Running tool registration test..."
+          python3 tests/e2e/test_tool_registration.py
+
+      - name: Run Project & Environment Workflow Tests
+        env:
+          MCP_SERVER_URL: http://localhost:8000
+        run: |
+          echo "Running per-category workflow tests..."
+          python3 -m pytest tests/e2e/test_projects_e2e.py tests/e2e/test_environments_e2e.py -v --tb=short
+
+      - name: Run Comprehensive Scenario Test
+        if: false  # Disabled - requires full project setup with templates/repositories
+        env:
+          MCP_SERVER_URL: http://localhost:8000
+        run: |
+          echo "Running comprehensive scenario test..."
+          python3 tests/e2e/test_comprehensive_scenario.py
+
+      - name: Show container logs on failure
+        if: failure()
+        run: |
+          echo "=== Semaphore Logs ==="
+          docker-compose -f docker-compose.test.yml logs --tail=100 semaphore
+          echo ""
+          echo "=== MCP Server Logs ==="
+          docker-compose -f docker-compose.test.yml logs --tail=100 semaphore-mcp
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker-compose -f docker-compose.test.yml down -v
+
+  test-summary:
+    name: E2E Test Summary
+    needs: e2e-tests
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Check test results
+        run: |
+          if [ "${{ needs.e2e-tests.result }}" = "success" ]; then
+            echo "✅ All E2E tests passed!"
+            exit 0
+          else
+            echo "❌ E2E tests failed"
+            exit 1
+          fi
