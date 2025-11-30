@@ -710,6 +710,93 @@ class SemaphoreAPIClient:
             "DELETE", f"project/{project_id}/repositories/{repository_id}"
         )
 
+    # Access Key endpoints
+    def list_access_keys(self, project_id: int) -> list[dict[str, Any]]:
+        """List all access keys for a project."""
+        result = self._request("GET", f"project/{project_id}/keys")
+        return result if isinstance(result, list) else []
+
+    def get_access_key(self, project_id: int, key_id: int) -> dict[str, Any]:
+        """Get an access key by ID."""
+        return self._request("GET", f"project/{project_id}/keys/{key_id}")
+
+    def create_access_key(
+        self,
+        project_id: int,
+        name: str,
+        key_type: str,
+        login: Optional[str] = None,
+        password: Optional[str] = None,
+        private_key: Optional[str] = None,
+    ) -> dict[str, Any]:
+        """Create a new access key for a project.
+
+        Args:
+            project_id: Project ID
+            name: Access key name
+            key_type: Type of key ("none", "ssh", or "login_password")
+            login: Username for ssh or login_password types
+            password: Password for login_password type
+            private_key: Private key content for ssh type
+
+        Returns:
+            Created access key information
+        """
+        payload: dict[str, Any] = {
+            "project_id": project_id,
+            "name": name,
+            "type": key_type,
+        }
+
+        # Add type-specific fields
+        if key_type == "login_password" and login:
+            payload["login_password"] = {"login": login, "password": password or ""}
+        elif key_type == "ssh" and private_key:
+            payload["ssh"] = {"login": login or "", "private_key": private_key}
+
+        return self._request("POST", f"project/{project_id}/keys", json=payload)
+
+    def update_access_key(
+        self,
+        project_id: int,
+        key_id: int,
+        name: Optional[str] = None,
+        key_type: Optional[str] = None,
+        login: Optional[str] = None,
+        password: Optional[str] = None,
+        private_key: Optional[str] = None,
+    ) -> dict[str, Any]:
+        """Update an existing access key.
+
+        Args:
+            project_id: Project ID
+            key_id: Access key ID
+            name: Access key name (optional)
+            key_type: Type of key (optional)
+            login: Username (optional)
+            password: Password (optional)
+            private_key: Private key content (optional)
+
+        Returns:
+            Updated access key information
+        """
+        payload: dict[str, Any] = {"id": key_id, "project_id": project_id}
+
+        if name is not None:
+            payload["name"] = name
+        if key_type is not None:
+            payload["type"] = key_type
+        if key_type == "login_password" and login:
+            payload["login_password"] = {"login": login, "password": password or ""}
+        elif key_type == "ssh" and private_key:
+            payload["ssh"] = {"login": login or "", "private_key": private_key}
+
+        return self._request("PUT", f"project/{project_id}/keys/{key_id}", json=payload)
+
+    def delete_access_key(self, project_id: int, key_id: int) -> dict[str, Any]:
+        """Delete an access key by ID."""
+        return self._request("DELETE", f"project/{project_id}/keys/{key_id}")
+
 
 # Convenience factory function
 def create_client(

@@ -12,6 +12,7 @@ from mcp.server.fastmcp import FastMCP
 
 from .api import create_client
 from .config import configure_logging, get_config
+from .tools.access_keys import AccessKeyTools
 from .tools.environments import EnvironmentTools
 from .tools.projects import ProjectTools
 from .tools.repositories import RepositoryTools
@@ -56,6 +57,7 @@ class SemaphoreMCPServer:
         self.task_tools = TaskTools(self.semaphore)
         self.environment_tools = EnvironmentTools(self.semaphore)
         self.repository_tools = RepositoryTools(self.semaphore)
+        self.access_key_tools = AccessKeyTools(self.semaphore)
 
         # Register tools
         self.register_tools()
@@ -118,6 +120,10 @@ class SemaphoreMCPServer:
         self.mcp.tool()(self.repository_tools.create_repository)
         self.mcp.tool()(self.repository_tools.update_repository)
         self.mcp.tool()(self.repository_tools.delete_repository)
+
+        # Access key tools (limited to safe operations)
+        self.mcp.tool()(self.access_key_tools.list_access_keys)
+        self.mcp.tool()(self.access_key_tools.create_access_key)
 
     # Tool methods have been moved to dedicated tool classes
 
