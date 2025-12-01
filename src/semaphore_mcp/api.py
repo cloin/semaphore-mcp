@@ -309,8 +309,36 @@ class SemaphoreAPIClient:
         Returns:
             Empty dict on success (204 response)
         """
-        payload: dict[str, Any] = {"id": template_id, "project_id": project_id}
+        # Fetch existing template to preserve unmodified fields
+        existing = self.get_template(project_id, template_id)
 
+        # Build payload starting from existing values
+        payload: dict[str, Any] = {
+            "id": template_id,
+            "project_id": project_id,
+            "name": existing.get("name", ""),
+            "playbook": existing.get("playbook", ""),
+            "inventory_id": existing.get("inventory_id", 0),
+            "repository_id": existing.get("repository_id", 0),
+            "environment_id": existing.get("environment_id", 0),
+            "description": existing.get("description", ""),
+            "arguments": existing.get("arguments", ""),
+            "allow_override_args_in_task": existing.get(
+                "allow_override_args_in_task", False
+            ),
+            "suppress_success_alerts": existing.get("suppress_success_alerts", False),
+            "app": existing.get("app", ""),
+            "git_branch": existing.get("git_branch", ""),
+            "survey_vars": existing.get("survey_vars", []),
+            "vaults": existing.get("vaults", []),
+            "type": existing.get("type", ""),
+            "start_version": existing.get("start_version", ""),
+            "build_template_id": existing.get("build_template_id"),
+            "autorun": existing.get("autorun", False),
+            "view_id": existing.get("view_id"),
+        }
+
+        # Override with specified updates
         if name is not None:
             payload["name"] = name
         if playbook is not None:
@@ -688,10 +716,20 @@ class SemaphoreAPIClient:
         Returns:
             Updated repository information
         """
-        # Include project_id and repository_id in payload to match SemaphoreUI API requirements
-        payload: dict[str, Any] = {"id": repository_id, "project_id": project_id}
+        # Fetch existing repository to preserve unmodified fields
+        existing = self.get_repository(project_id, repository_id)
 
-        # Only update what's specified
+        # Build payload starting from existing values
+        payload: dict[str, Any] = {
+            "id": repository_id,
+            "project_id": project_id,
+            "name": existing.get("name", ""),
+            "git_url": existing.get("git_url", ""),
+            "git_branch": existing.get("git_branch", ""),
+            "ssh_key_id": existing.get("ssh_key_id", 0),
+        }
+
+        # Override with specified updates
         if name is not None:
             payload["name"] = name
         if git_url is not None:
