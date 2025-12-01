@@ -35,17 +35,6 @@ jobs:
           pip install -e .
           pip install pytest pytest-asyncio
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Cache Docker layers
-        uses: actions/cache@v4
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-e2e-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-e2e-
-
       - name: Generate Semaphore credentials
         id: semaphore-creds
         run: |
@@ -58,7 +47,8 @@ jobs:
 
       - name: Build Docker images
         run: |
-          docker compose -f docker-compose.test.yml build --build-arg BUILDKIT_INLINE_CACHE=1
+          # Use --no-cache to ensure fresh builds with latest code
+          docker compose -f docker-compose.test.yml build --no-cache
 
       - name: Start Semaphore container
         run: |
