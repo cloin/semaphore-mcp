@@ -95,6 +95,7 @@ class TemplateTools(BaseTool):
         build_template_id: Optional[int] = None,
         autorun: bool = False,
         view_id: Optional[int] = None,
+        task_params: Optional[dict[str, Any]] = None,
     ) -> dict[str, Any]:
         """Create a new template.
 
@@ -118,6 +119,14 @@ class TemplateTools(BaseTool):
             build_template_id: Build template ID for deploy templates (optional)
             autorun: Enable autorun (default: False)
             view_id: View ID (optional)
+            task_params: App-specific task parameters (optional). For Ansible templates:
+                - allow_override_limit: Allow task-level --limit override (required for run_task limit)
+                - allow_override_inventory: Allow task-level inventory override
+                - allow_override_tags: Allow task-level --tags override
+                - allow_override_skip_tags: Allow task-level --skip-tags override
+                - limit: Default limit (list of hosts/groups)
+                - tags: Default tags (list)
+                - skip_tags: Default skip tags (list)
 
         Returns:
             Created template details
@@ -143,6 +152,7 @@ class TemplateTools(BaseTool):
                 build_template_id=build_template_id,
                 autorun=autorun,
                 view_id=view_id,
+                task_params=task_params,
             )
         except Exception as e:
             self.handle_error(e, f"creating template '{name}' in project {project_id}")
@@ -169,6 +179,7 @@ class TemplateTools(BaseTool):
         build_template_id: Optional[int] = None,
         autorun: Optional[bool] = None,
         view_id: Optional[int] = None,
+        task_params: Optional[dict[str, Any]] = None,
     ) -> dict[str, Any]:
         """Update an existing template.
 
@@ -193,6 +204,14 @@ class TemplateTools(BaseTool):
             build_template_id: Build template ID (optional)
             autorun: Enable autorun (optional)
             view_id: View ID (optional)
+            task_params: App-specific task parameters (optional). For Ansible templates:
+                - allow_override_limit: Allow task-level --limit override (required for run_task limit)
+                - allow_override_inventory: Allow task-level inventory override
+                - allow_override_tags: Allow task-level --tags override
+                - allow_override_skip_tags: Allow task-level --skip-tags override
+                - limit: Default limit (list of hosts/groups)
+                - tags: Default tags (list)
+                - skip_tags: Default skip tags (list)
 
         Returns:
             Empty dict on success
@@ -219,6 +238,7 @@ class TemplateTools(BaseTool):
                 build_template_id=build_template_id,
                 autorun=autorun,
                 view_id=view_id,
+                task_params=task_params,
             )
         except Exception as e:
             self.handle_error(e, f"updating template {template_id}")
