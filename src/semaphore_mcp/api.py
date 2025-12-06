@@ -198,6 +198,7 @@ class SemaphoreAPIClient:
         build_template_id: Optional[int] = None,
         autorun: bool = False,
         view_id: Optional[int] = None,
+        task_params: Optional[dict[str, Any]] = None,
     ) -> dict[str, Any]:
         """Create a new template for a project.
 
@@ -221,6 +222,14 @@ class SemaphoreAPIClient:
             build_template_id: Build template ID (for deploy templates)
             autorun: Enable autorun
             view_id: View ID
+            task_params: App-specific task parameters. For Ansible templates:
+                - allow_override_limit: Allow task-level --limit override
+                - allow_override_inventory: Allow task-level inventory override
+                - allow_override_tags: Allow task-level --tags override
+                - allow_override_skip_tags: Allow task-level --skip-tags override
+                - limit: Default limit (list of hosts/groups)
+                - tags: Default tags (list)
+                - skip_tags: Default skip tags (list)
 
         Returns:
             Created template information
@@ -256,6 +265,8 @@ class SemaphoreAPIClient:
             payload["build_template_id"] = build_template_id
         if view_id is not None:
             payload["view_id"] = view_id
+        if task_params is not None:
+            payload["task_params"] = task_params
 
         return self._request("POST", f"project/{project_id}/templates", json=payload)
 
@@ -281,6 +292,7 @@ class SemaphoreAPIClient:
         build_template_id: Optional[int] = None,
         autorun: Optional[bool] = None,
         view_id: Optional[int] = None,
+        task_params: Optional[dict[str, Any]] = None,
     ) -> dict[str, Any]:
         """Update an existing template.
 
@@ -305,6 +317,14 @@ class SemaphoreAPIClient:
             build_template_id: Build template ID (optional)
             autorun: Enable autorun (optional)
             view_id: View ID (optional)
+            task_params: App-specific task parameters (optional). For Ansible:
+                - allow_override_limit: Allow task-level --limit override
+                - allow_override_inventory: Allow task-level inventory override
+                - allow_override_tags: Allow task-level --tags override
+                - allow_override_skip_tags: Allow task-level --skip-tags override
+                - limit: Default limit (list of hosts/groups)
+                - tags: Default tags (list)
+                - skip_tags: Default skip tags (list)
 
         Returns:
             Empty dict on success (204 response)
@@ -336,6 +356,7 @@ class SemaphoreAPIClient:
             "build_template_id": existing.get("build_template_id"),
             "autorun": existing.get("autorun", False),
             "view_id": existing.get("view_id"),
+            "task_params": existing.get("task_params", {}),
         }
 
         # Override with specified updates
@@ -375,6 +396,8 @@ class SemaphoreAPIClient:
             payload["autorun"] = autorun
         if view_id is not None:
             payload["view_id"] = view_id
+        if task_params is not None:
+            payload["task_params"] = task_params
 
         return self._request(
             "PUT", f"project/{project_id}/templates/{template_id}", json=payload
