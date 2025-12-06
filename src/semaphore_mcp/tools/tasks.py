@@ -223,8 +223,7 @@ class TaskTools(BaseTool):
             template_id: ID of the template to run
             project_id: Optional project ID (if not provided, will attempt to determine from template)
             environment: Optional environment variables for the task as dictionary
-            limit: Restrict execution to specific hosts/groups (Ansible --limit).
-                NOTE: Requires template to have task_params.allow_override_limit=true
+            limit: Restrict execution to specific hosts/groups (Ansible --limit)
             dry_run: Run without making changes (Ansible --check)
             diff: Show differences when changing files (Ansible --diff)
             debug: Enable verbose debug output
@@ -232,17 +231,20 @@ class TaskTools(BaseTool):
             git_branch: Override git branch to use
             message: Task description/message
             arguments: Additional CLI arguments
-            inventory_id: Override inventory to use.
-                NOTE: Requires template to have task_params.allow_override_inventory=true
+            inventory_id: Override inventory to use
             follow: Enable 30-second monitoring for startup verification (default: False)
 
         Returns:
             Task execution result with immediate web URLs and optional monitoring summary
 
-        Note:
-            Task-level overrides (limit, inventory_id) require the template to have
-            the corresponding override enabled in task_params. Use update_template()
-            to set task_params={"allow_override_limit": true} etc.
+        Template Override Requirements:
+            Some parameters require the template to have overrides enabled in task_params.
+            Use create_template() or update_template() with task_params to enable:
+
+            - limit: requires task_params={"allow_override_limit": true}
+            - inventory_id: requires task_params={"allow_override_inventory": true}
+
+            Without these settings, the parameter will be ignored silently.
 
         Examples:
             # Just start the task and get URLs
@@ -251,7 +253,7 @@ class TaskTools(BaseTool):
             # Start task with 30-second monitoring and get URLs
             result = await run_task(template_id=5, follow=True)
 
-            # Run with limit to specific hosts (requires template allow_override_limit=true)
+            # Run with limit to specific hosts (template must allow override)
             result = await run_task(template_id=5, limit="webservers")
 
             # Dry run with diff to preview changes
