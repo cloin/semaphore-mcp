@@ -1,10 +1,7 @@
 """
 Tests for the AccessKeyTools class functionality.
 
-Tests cover access key operations for list and create methods.
-Note: get, update, and delete operations are intentionally not exposed
-as MCP tools for security reasons (prevent credential exposure and
-accidental destructive operations).
+Tests cover access key operations: list, create, and delete.
 """
 
 import pytest
@@ -142,3 +139,32 @@ class TestAccessKeyTools:
             await access_key_tools.create_access_key(project_id, name, key_type)
 
         assert "Error during creating access key 'Test Key'" in str(excinfo.value)
+
+    @pytest.mark.asyncio
+    async def test_delete_access_key(self, access_key_tools):
+        """Test delete_access_key method."""
+        project_id = 1
+        key_id = 2
+        mock_result = {}
+        access_key_tools.semaphore.delete_access_key.return_value = mock_result
+
+        result = await access_key_tools.delete_access_key(project_id, key_id)
+
+        assert result == mock_result
+        access_key_tools.semaphore.delete_access_key.assert_called_once_with(
+            project_id, key_id
+        )
+
+    @pytest.mark.asyncio
+    async def test_delete_access_key_error(self, access_key_tools):
+        """Test delete_access_key method with error."""
+        project_id = 1
+        key_id = 2
+        access_key_tools.semaphore.delete_access_key.side_effect = Exception(
+            "API error"
+        )
+
+        with pytest.raises(RuntimeError) as excinfo:
+            await access_key_tools.delete_access_key(project_id, key_id)
+
+        assert "Error during deleting access key" in str(excinfo.value)

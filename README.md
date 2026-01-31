@@ -145,6 +145,8 @@ Once connected, you can interact with SemaphoreUI through natural conversation:
 
 **Repositories:** `list_repositories`, `get_repository`, `create_repository`, `update_repository`, `delete_repository`
 
+**Access keys:** `list_access_keys`, `create_access_key`, `delete_access_key`
+
 ## Troubleshooting
 
 **Container won't start or exits immediately:**

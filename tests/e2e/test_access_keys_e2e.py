@@ -1,7 +1,6 @@
 """E2E tests for Access Key tools.
 
-Note: Only list and create operations are exposed as MCP tools.
-Get, update, and delete are intentionally not exposed for security reasons.
+Exposed MCP tools: list_access_keys, create_access_key, delete_access_key.
 """
 
 import sys
@@ -142,6 +141,39 @@ class TestAccessKeysE2E:
         # Verify our key is in the list
         key_names = [k["name"] for k in final_keys["access_keys"]]
         assert "E2E Workflow Public Key" in key_names
+
+    def test_create_and_delete_access_key(
+        self, inspector: MCPInspector, created_project: dict
+    ):
+        """Test creating an access key and then deleting it."""
+        project_id = created_project["id"]
+
+        # Create key
+        create_result = inspector.call_tool(
+            "create_access_key",
+            {
+                "project_id": project_id,
+                "name": "E2E Key To Delete",
+                "key_type": "none",
+            },
+        )
+        created_key = parse_mcp_response(create_result)
+        key_id = created_key["id"]
+
+        # Delete key
+        delete_result = inspector.call_tool(
+            "delete_access_key",
+            {"project_id": project_id, "key_id": key_id},
+        )
+        parse_mcp_response(delete_result)
+
+        # Verify key no longer in list
+        list_result = inspector.call_tool(
+            "list_access_keys", {"project_id": project_id}
+        )
+        data = parse_mcp_response(list_result)
+        key_ids = [k["id"] for k in data["access_keys"]]
+        assert key_id not in key_ids
 
 
 if __name__ == "__main__":
