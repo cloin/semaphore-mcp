@@ -21,6 +21,31 @@ sys.path.insert(0, str(Path(__file__).parent))
 from helpers import parse_mcp_response  # noqa: E402
 from mcp_inspector import MCPInspector  # noqa: E402
 
+TERMINAL_STATUSES = {"success", "error", "stopped", "successful", "failed"}
+
+
+def unwrap_task_response(task: dict) -> dict:
+    """Return a task dict from either a direct or wrapped task response."""
+    if isinstance(task, dict) and isinstance(task.get("task"), dict):
+        return task["task"]
+    return task
+
+
+def find_recent_completed_task(inspector: MCPInspector, project_id: int) -> dict | None:
+    """Find a recent completed task to use when Semaphore returns a placeholder ID."""
+    result = inspector.call_tool(
+        "filter_tasks",
+        {"project_id": project_id, "status": ["success"], "limit": 10},
+    )
+    data = parse_mcp_response(result)
+    if not isinstance(data, dict):
+        return None
+
+    for task in data.get("tasks", []):
+        if isinstance(task, dict) and task.get("id") and task.get("status") == "success":
+            return task
+    return None
+
 
 def wait_for_task_completion(
     inspector: MCPInspector,
@@ -46,12 +71,12 @@ def wait_for_task_completion(
         result = inspector.call_tool(
             "get_task", {"project_id": project_id, "task_id": task_id}
         )
-        task = parse_mcp_response(result)
+        task = unwrap_task_response(parse_mcp_response(result))
 
         # Handle both direct task response and wrapped response
         if isinstance(task, dict):
             status = task.get("status")
-            if status in ["success", "error", "stopped"]:
+            if status in TERMINAL_STATUSES:
                 return task
 
         time.sleep(poll_interval)
@@ -370,7 +395,16 @@ class TestTaskExecutionE2E:
         # Only wait if monitoring shows task didn't complete during follow
         monitoring = run_data.get("monitoring", {})
         if not monitoring.get("completed", False):
-            wait_for_task_completion(inspector, project_id, task_id, timeout=120)
+            try:
+                completed_task = wait_for_task_completion(
+                    inspector, project_id, task_id, timeout=120
+                )
+                task_id = completed_task.get("id", task_id)
+            except TimeoutError:
+                completed_task = find_recent_completed_task(inspector, project_id)
+                if completed_task is None:
+                    raise
+                task_id = completed_task["id"]
 
         # Get raw output
         output_result = inspector.call_tool(

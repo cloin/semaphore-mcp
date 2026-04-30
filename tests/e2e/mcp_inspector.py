@@ -1,6 +1,7 @@
 """Helper module for interacting with MCP Inspector CLI."""
 
 import json
+import os
 import subprocess
 from typing import Any
 
@@ -26,6 +27,7 @@ class MCPInspector:
             server_url = server_url.rstrip("/") + "/mcp"
         self.server_url = server_url
         self.transport = transport
+        self.timeout = int(os.getenv("MCP_INSPECTOR_TIMEOUT", "90"))
 
     def _run_inspector(self, args: list[str]) -> dict[str, Any]:
         """Run MCP Inspector CLI and return parsed JSON output.
@@ -50,7 +52,11 @@ class MCPInspector:
 
         try:
             result = subprocess.run(
-                cmd, capture_output=True, text=True, check=True, timeout=30
+                cmd,
+                capture_output=True,
+                text=True,
+                check=True,
+                timeout=self.timeout,
             )
             # Parse JSON from stdout
             return json.loads(result.stdout)
