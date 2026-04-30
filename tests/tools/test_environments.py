@@ -202,7 +202,7 @@ class TestEnvironmentTools:
             "id": 3,
             "name": "Test Inventory",
             "project_id": project_id,
-            "type": "file",
+            "type": "static",
             "inventory": inventory_data,
         }
         environment_tools.semaphore.create_inventory.return_value = mock_created
@@ -215,7 +215,31 @@ class TestEnvironmentTools:
         # Verify the result
         assert result == mock_created
         environment_tools.semaphore.create_inventory.assert_called_once_with(
-            project_id, name, inventory_data
+            project_id, name, inventory_data, "static"
+        )
+
+    @pytest.mark.asyncio
+    async def test_create_inventory_with_file_type(self, environment_tools):
+        """Test create_inventory method with a file-backed inventory."""
+        project_id = 1
+        name = "File Inventory"
+        inventory_path = "inventories/hosts.ini"
+        mock_created = {
+            "id": 4,
+            "name": name,
+            "project_id": project_id,
+            "type": "file",
+            "inventory": inventory_path,
+        }
+        environment_tools.semaphore.create_inventory.return_value = mock_created
+
+        result = await environment_tools.create_inventory(
+            project_id, name, inventory_path, inventory_type="file"
+        )
+
+        assert result == mock_created
+        environment_tools.semaphore.create_inventory.assert_called_once_with(
+            project_id, name, inventory_path, "file"
         )
 
     @pytest.mark.asyncio
@@ -232,7 +256,7 @@ class TestEnvironmentTools:
             "id": inventory_id,
             "name": "Updated Inventory",
             "project_id": project_id,
-            "type": "file",
+            "type": "static",
             "inventory": inventory_data,
         }
         environment_tools.semaphore.update_inventory.return_value = mock_updated
@@ -245,7 +269,36 @@ class TestEnvironmentTools:
         # Verify the result
         assert result == mock_updated
         environment_tools.semaphore.update_inventory.assert_called_once_with(
-            project_id, inventory_id, name, inventory_data
+            project_id, inventory_id, name, inventory_data, "static"
+        )
+
+    @pytest.mark.asyncio
+    async def test_update_inventory_with_file_type(self, environment_tools):
+        """Test update_inventory method with a file-backed inventory."""
+        project_id = 1
+        inventory_id = 42
+        name = "Updated File Inventory"
+        inventory_path = "inventories/hosts.ini"
+        mock_updated = {
+            "id": inventory_id,
+            "name": name,
+            "project_id": project_id,
+            "type": "file",
+            "inventory": inventory_path,
+        }
+        environment_tools.semaphore.update_inventory.return_value = mock_updated
+
+        result = await environment_tools.update_inventory(
+            project_id,
+            inventory_id,
+            name,
+            inventory_path,
+            inventory_type="file",
+        )
+
+        assert result == mock_updated
+        environment_tools.semaphore.update_inventory.assert_called_once_with(
+            project_id, inventory_id, name, inventory_path, "file"
         )
 
     @pytest.mark.asyncio
@@ -349,7 +402,7 @@ class TestEnvironmentTools:
         # Verify the result
         assert result == mock_updated
         environment_tools.semaphore.update_inventory.assert_called_once_with(
-            project_id, inventory_id, None, inventory_data
+            project_id, inventory_id, None, inventory_data, "static"
         )
 
     @pytest.mark.asyncio

@@ -299,9 +299,18 @@ class TestSemaphoreAPIClientComprehensive:
     def test_create_inventory_basic(self, mock_client):
         """Test create_inventory method without inventory_data."""
         mock_response = {"id": 1, "name": "test"}
-        with patch.object(mock_client, "_request", return_value=mock_response):
+        with patch.object(
+            mock_client, "_request", return_value=mock_response
+        ) as mock_request:
             result = mock_client.create_inventory(1, "test", "")
             assert result == mock_response
+            args, kwargs = mock_request.call_args
+            assert args == ("POST", "project/1/inventory")
+            assert kwargs["json"] == {
+                "name": "test",
+                "type": "static",
+                "project_id": 1,
+            }
 
     def test_create_inventory_with_data(self, mock_client):
         """Test create_inventory method with inventory_data."""
@@ -315,7 +324,28 @@ class TestSemaphoreAPIClientComprehensive:
             # Verify inventory_data was included
             args, kwargs = mock_request.call_args
             assert "json" in kwargs
+            assert kwargs["json"]["type"] == "static"
             assert kwargs["json"]["inventory"] == inventory_data
+
+    def test_create_inventory_with_file_type(self, mock_client):
+        """Test create_inventory method with a file-backed inventory."""
+        mock_response = {"id": 1, "name": "test"}
+        inventory_path = "inventories/hosts.ini"
+        with patch.object(
+            mock_client, "_request", return_value=mock_response
+        ) as mock_request:
+            result = mock_client.create_inventory(
+                1, "test", inventory_path, inventory_type="file"
+            )
+            assert result == mock_response
+            args, kwargs = mock_request.call_args
+            assert args == ("POST", "project/1/inventory")
+            assert kwargs["json"] == {
+                "name": "test",
+                "type": "file",
+                "project_id": 1,
+                "inventory": inventory_path,
+            }
 
     def test_update_inventory_name_only(self, mock_client):
         """Test update_inventory method with name only."""
@@ -328,6 +358,7 @@ class TestSemaphoreAPIClientComprehensive:
             # Verify only name was updated
             args, kwargs = mock_request.call_args
             assert "json" in kwargs
+            assert kwargs["json"]["type"] == "static"
             assert kwargs["json"]["name"] == "updated"
             assert "inventory" not in kwargs["json"]  # inventory_data not included
 
@@ -343,6 +374,7 @@ class TestSemaphoreAPIClientComprehensive:
             # Verify inventory_data was included
             args, kwargs = mock_request.call_args
             assert "json" in kwargs
+            assert kwargs["json"]["type"] == "static"
             assert kwargs["json"]["inventory"] == inventory_data
             assert "name" not in kwargs["json"]  # name not included
 
@@ -358,8 +390,34 @@ class TestSemaphoreAPIClientComprehensive:
             # Verify both were included
             args, kwargs = mock_request.call_args
             assert "json" in kwargs
+            assert kwargs["json"]["type"] == "static"
             assert kwargs["json"]["name"] == "updated"
             assert kwargs["json"]["inventory"] == inventory_data
+
+    def test_update_inventory_with_file_type(self, mock_client):
+        """Test update_inventory method with a file-backed inventory."""
+        mock_response = {"id": 1, "name": "updated"}
+        inventory_path = "inventories/hosts.ini"
+        with patch.object(
+            mock_client, "_request", return_value=mock_response
+        ) as mock_request:
+            result = mock_client.update_inventory(
+                1,
+                1,
+                "updated",
+                inventory_path,
+                inventory_type="file",
+            )
+            assert result == mock_response
+            args, kwargs = mock_request.call_args
+            assert args == ("PUT", "project/1/inventory/1")
+            assert kwargs["json"] == {
+                "type": "file",
+                "project_id": 1,
+                "id": 1,
+                "name": "updated",
+                "inventory": inventory_path,
+            }
 
     def test_delete_inventory(self, mock_client):
         """Test delete_inventory method."""
