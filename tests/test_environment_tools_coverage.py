@@ -174,7 +174,9 @@ class TestEnvironmentToolsCoverage:
 
         assert result["id"] == 1
         # Verify the call was made with None values
-        env_tools.semaphore.update_inventory.assert_called_once_with(1, 1, None, None)
+        env_tools.semaphore.update_inventory.assert_called_once_with(
+            1, 1, None, None, "static"
+        )
 
     @pytest.mark.asyncio
     async def test_create_environment_empty_data(self, env_tools):
@@ -194,7 +196,9 @@ class TestEnvironmentToolsCoverage:
         result = await env_tools.create_inventory(1, "test", "")
 
         assert result["id"] == 1
-        env_tools.semaphore.create_inventory.assert_called_once_with(1, "test", "")
+        env_tools.semaphore.create_inventory.assert_called_once_with(
+            1, "test", "", "static"
+        )
 
     @pytest.mark.asyncio
     async def test_environment_tools_inheritance(self, env_tools):

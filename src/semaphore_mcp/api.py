@@ -617,22 +617,27 @@ class SemaphoreAPIClient:
         return self._request("GET", f"project/{project_id}/inventory/{inventory_id}")
 
     def create_inventory(
-        self, project_id: int, name: str, inventory_data: str
+        self,
+        project_id: int,
+        name: str,
+        inventory_data: str,
+        inventory_type: str = "static",
     ) -> dict[str, Any]:
         """Create a new inventory item for a project.
 
         Args:
             project_id: Project ID
             name: Inventory name
-            inventory_data: Inventory content (typically Ansible inventory format)
+            inventory_data: Inventory content (for "static") or file path on the
+                Semaphore server (for "file")
+            inventory_type: Semaphore inventory type, such as "static",
+                "static-yaml", or "file". Defaults to "static".
 
         Returns:
             Created inventory information
         """
-        # Include project_id in payload to match SemaphoreUI API requirements
-        payload = {"name": name, "type": "file", "project_id": project_id}
+        payload = {"name": name, "type": inventory_type, "project_id": project_id}
 
-        # Add inventory content
         if inventory_data:
             payload["inventory"] = inventory_data
 
@@ -644,6 +649,7 @@ class SemaphoreAPIClient:
         inventory_id: int,
         name: Optional[str] = None,
         inventory_data: Optional[str] = None,
+        inventory_type: str = "static",
     ) -> dict[str, Any]:
         """Update an existing inventory item.
 
@@ -651,19 +657,25 @@ class SemaphoreAPIClient:
             project_id: Project ID
             inventory_id: Inventory ID
             name: Inventory name (optional)
-            inventory_data: Inventory content (optional)
+            inventory_data: Inventory content for "static", or file path for "file"
+                (optional)
+            inventory_type: Semaphore inventory type, such as "static",
+                "static-yaml", or "file". Always sent in the payload; pass the
+                existing type if you don't intend to change it. Defaults to
+                "static".
 
         Returns:
             Updated inventory information
         """
-        # Include project_id and inventory_id in payload to match SemaphoreUI API requirements
-        payload = {"type": "file", "project_id": project_id, "id": inventory_id}
+        payload = {
+            "type": inventory_type,
+            "project_id": project_id,
+            "id": inventory_id,
+        }
 
-        # Only update what's specified
         if name is not None:
             payload["name"] = name
 
-        # Add inventory content if provided
         if inventory_data is not None:
             payload["inventory"] = inventory_data
 

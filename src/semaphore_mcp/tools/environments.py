@@ -149,20 +149,29 @@ class EnvironmentTools(BaseTool):
             self.handle_error(e, f"getting inventory {inventory_id}")
 
     async def create_inventory(
-        self, project_id: int, name: str, inventory_data: str
+        self,
+        project_id: int,
+        name: str,
+        inventory_data: str,
+        inventory_type: str = "static",
     ) -> dict[str, Any]:
         """Create a new inventory item.
 
         Args:
             project_id: ID of the project
             name: Inventory name
-            inventory_data: Inventory content (typically Ansible inventory format)
+            inventory_data: Inventory content (for "static") or file path on the
+                Semaphore server (for "file")
+            inventory_type: Semaphore inventory type, such as "static",
+                "static-yaml", or "file". Defaults to "static".
 
         Returns:
             Created inventory item details
         """
         try:
-            return self.semaphore.create_inventory(project_id, name, inventory_data)
+            return self.semaphore.create_inventory(
+                project_id, name, inventory_data, inventory_type
+            )
         except Exception as e:
             self.handle_error(e, f"creating inventory '{name}' in project {project_id}")
 
@@ -172,6 +181,7 @@ class EnvironmentTools(BaseTool):
         inventory_id: int,
         name: Optional[str] = None,
         inventory_data: Optional[str] = None,
+        inventory_type: str = "static",
     ) -> dict[str, Any]:
         """Update an existing inventory item.
 
@@ -179,14 +189,18 @@ class EnvironmentTools(BaseTool):
             project_id: ID of the project
             inventory_id: ID of the inventory item to update
             name: Inventory name (optional)
-            inventory_data: Inventory content (optional)
+            inventory_data: Inventory content for "static", or file path for "file"
+                (optional)
+            inventory_type: Semaphore inventory type, such as "static",
+                "static-yaml", or "file". Defaults to "static"; pass the existing
+                type if you don't intend to change it.
 
         Returns:
             Updated inventory item details
         """
         try:
             return self.semaphore.update_inventory(
-                project_id, inventory_id, name, inventory_data
+                project_id, inventory_id, name, inventory_data, inventory_type
             )
         except Exception as e:
             self.handle_error(e, f"updating inventory {inventory_id}")

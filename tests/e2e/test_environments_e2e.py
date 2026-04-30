@@ -181,12 +181,14 @@ class TestInventoryE2E:
                 "project_id": project_id,
                 "name": "E2E Create Test Inventory",
                 "inventory_data": "[all]\nlocalhost ansible_connection=local",
+                "inventory_type": "static",
             },
         )
         inventory = parse_mcp_response(create_result)
 
         assert "id" in inventory
         assert inventory["name"] == "E2E Create Test Inventory"
+        assert inventory["type"] == "static"
 
         inventory_id = inventory["id"]
 
@@ -210,6 +212,7 @@ class TestInventoryE2E:
 
         assert data["id"] == inventory_id
         assert "name" in data
+        assert data["type"] == "static"
 
     def test_update_inventory(self, inspector: MCPInspector, created_inventory: tuple):
         """Test updating an inventory."""
@@ -233,6 +236,7 @@ class TestInventoryE2E:
         )
         updated_inv = parse_mcp_response(get_result)
         assert updated_inv["name"] == "E2E Updated Inventory"
+        assert updated_inv["type"] == "static"
 
     def test_inventory_crud_workflow(
         self, inspector: MCPInspector, created_project: dict
@@ -251,6 +255,7 @@ class TestInventoryE2E:
         )
         inventory = parse_mcp_response(create_result)
         assert "id" in inventory
+        assert inventory["type"] == "static"
         inventory_id = inventory["id"]
 
         try:
@@ -261,6 +266,7 @@ class TestInventoryE2E:
             )
             read_inv = parse_mcp_response(get_result)
             assert read_inv["id"] == inventory_id
+            assert read_inv["type"] == "static"
 
             # Update
             inspector.call_tool(
@@ -279,6 +285,7 @@ class TestInventoryE2E:
             )
             updated_inv = parse_mcp_response(get_result)
             assert updated_inv["name"] == "E2E CRUD Updated Inventory"
+            assert updated_inv["type"] == "static"
 
             # List and verify inventory is in list
             list_result = inspector.call_tool(
