@@ -42,7 +42,11 @@ def find_recent_completed_task(inspector: MCPInspector, project_id: int) -> dict
         return None
 
     for task in data.get("tasks", []):
-        if isinstance(task, dict) and task.get("id") and task.get("status") == "success":
+        if (
+            isinstance(task, dict)
+            and task.get("id")
+            and task.get("status") == "success"
+        ):
             return task
     return None
 
