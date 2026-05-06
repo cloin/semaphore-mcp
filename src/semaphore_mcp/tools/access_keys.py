@@ -63,3 +63,20 @@ class AccessKeyTools(BaseTool):
             self.handle_error(
                 e, f"creating access key '{name}' in project {project_id}"
             )
+
+    async def delete_access_key(self, project_id: int, key_id: int) -> dict[str, Any]:
+        """Delete an access key by ID.
+
+        Args:
+            project_id: ID of the project
+            key_id: ID of the access key to delete
+
+        Returns:
+            Empty dict on success
+        """
+        try:
+            return self.semaphore.delete_access_key(project_id, key_id)
+        except Exception as e:
+            self.handle_error(
+                e, f"deleting access key {key_id} in project {project_id}"
+            )
