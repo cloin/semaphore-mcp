@@ -184,6 +184,83 @@ class SemaphoreAPIClient:
         """
         return self._request("DELETE", f"project/{project_id}")
 
+    # View endpoints
+    def list_views(self, project_id: int) -> list[dict[str, Any]]:
+        """List all views for a project."""
+        result = self._request("GET", f"project/{project_id}/views")
+        return result if isinstance(result, list) else []
+
+    def get_view(self, project_id: int, view_id: int) -> dict[str, Any]:
+        """Get a view by ID."""
+        return self._request("GET", f"project/{project_id}/views/{view_id}")
+
+    def create_view(
+        self,
+        project_id: int,
+        title: str,
+        position: Optional[int] = None,
+    ) -> dict[str, Any]:
+        """Create a new view for a project.
+
+        Args:
+            project_id: Project ID
+            title: View title
+            position: View ordering position
+
+        Returns:
+            Created view information
+        """
+        payload: dict[str, Any] = {
+            "project_id": project_id,
+            "title": title,
+        }
+
+        if position is not None:
+            payload["position"] = position
+
+        return self._request("POST", f"project/{project_id}/views", json=payload)
+
+    def update_view(
+        self,
+        project_id: int,
+        view_id: int,
+        title: Optional[str] = None,
+        position: Optional[int] = None,
+    ) -> dict[str, Any]:
+        """Update an existing view.
+
+        Args:
+            project_id: Project ID
+            view_id: View ID
+            title: View title
+            position: View ordering position
+
+        Returns:
+            Empty dict on success
+        """
+        existing = self.get_view(project_id, view_id)
+        payload: dict[str, Any] = {
+            "id": view_id,
+            "project_id": project_id,
+            "title": existing.get("title", ""),
+        }
+
+        if existing.get("position") is not None:
+            payload["position"] = existing["position"]
+
+        if title is not None:
+            payload["title"] = title
+        if position is not None:
+            payload["position"] = position
+
+        return self._request(
+            "PUT", f"project/{project_id}/views/{view_id}", json=payload
+        )
+
+    def delete_view(self, project_id: int, view_id: int) -> dict[str, Any]:
+        """Delete a view by ID."""
+        return self._request("DELETE", f"project/{project_id}/views/{view_id}")
+
     # Template endpoints
     def list_templates(self, project_id: int) -> list[dict[str, Any]]:
         """List all templates for a project."""

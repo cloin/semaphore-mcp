@@ -11,6 +11,7 @@ from .repositories import RepositoryTools
 from .schedules import ScheduleTools
 from .tasks import TaskTools
 from .templates import TemplateTools
+from .views import ViewTools
 
 __all__ = [
     "AccessKeyTools",
@@ -20,4 +21,5 @@ __all__ = [
     "EnvironmentTools",
     "RepositoryTools",
     "ScheduleTools",
+    "ViewTools",
 ]

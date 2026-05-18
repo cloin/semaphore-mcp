@@ -17,6 +17,12 @@ EXPECTED_TOOLS = {
     "create_project",
     "update_project",
     "delete_project",
+    # View tools (5)
+    "list_views",
+    "get_view",
+    "create_view",
+    "update_view",
+    "delete_view",
     # Template tools (6)
     "list_templates",
     "get_template",
