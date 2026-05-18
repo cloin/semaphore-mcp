@@ -23,6 +23,7 @@ class TestSemaphoreMCPServerCoverage:
         assert server.task_tools is not None
         assert server.environment_tools is not None
         assert server.schedule_tools is not None
+        assert server.view_tools is not None
 
     @patch("semaphore_mcp.server.get_config")
     def test_server_initialization_from_config(self, mock_get_config):
@@ -129,6 +130,7 @@ class TestSemaphoreMCPServerCoverage:
             assert server.task_tools.semaphore == mock_semaphore
             assert server.environment_tools.semaphore == mock_semaphore
             assert server.schedule_tools.semaphore == mock_semaphore
+            assert server.view_tools.semaphore == mock_semaphore
 
     @patch("semaphore_mcp.server.FastMCP")
     def test_fastmcp_initialization(self, mock_fastmcp_class):
@@ -181,6 +183,7 @@ class TestSemaphoreMCPServerCoverage:
             "task_tools",
             "environment_tools",
             "schedule_tools",
+            "view_tools",
         ]
 
         for attr in required_attributes:

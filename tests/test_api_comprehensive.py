@@ -87,6 +87,81 @@ class TestSemaphoreAPIClientComprehensive:
             result = mock_client.get_project(1)
             assert result == mock_response
 
+    def test_list_views_dict_response(self, mock_client):
+        """Test list_views when API returns dict instead of list."""
+        mock_response = {"views": [{"id": 1, "title": "deployments"}]}
+        with patch.object(mock_client, "_request", return_value=mock_response):
+            result = mock_client.list_views(1)
+            assert result == []
+
+    def test_list_views_list_response(self, mock_client):
+        """Test list_views when API returns list."""
+        mock_response = [{"id": 1, "title": "deployments"}]
+        with patch.object(mock_client, "_request", return_value=mock_response):
+            result = mock_client.list_views(1)
+            assert result == mock_response
+
+    def test_get_view(self, mock_client):
+        """Test get_view method."""
+        mock_response = {"id": 1, "title": "deployments"}
+        with patch.object(
+            mock_client, "_request", return_value=mock_response
+        ) as mock_request:
+            result = mock_client.get_view(1, 1)
+            assert result == mock_response
+            mock_request.assert_called_once_with("GET", "project/1/views/1")
+
+    def test_create_view(self, mock_client):
+        """Test create_view method."""
+        mock_response = {"id": 1, "title": "deployments"}
+        with patch.object(
+            mock_client, "_request", return_value=mock_response
+        ) as mock_request:
+            result = mock_client.create_view(1, "deployments", position=2)
+            assert result == mock_response
+            mock_request.assert_called_once_with(
+                "POST",
+                "project/1/views",
+                json={"project_id": 1, "title": "deployments", "position": 2},
+            )
+
+    def test_create_view_without_position(self, mock_client):
+        """Test create_view omits optional position."""
+        mock_response = {"id": 1, "title": "deployments"}
+        with patch.object(
+            mock_client, "_request", return_value=mock_response
+        ) as mock_request:
+            result = mock_client.create_view(1, "deployments")
+            assert result == mock_response
+            mock_request.assert_called_once_with(
+                "POST",
+                "project/1/views",
+                json={"project_id": 1, "title": "deployments"},
+            )
+
+    def test_update_view_preserves_existing_fields(self, mock_client):
+        """Test update_view fetches existing view and preserves fields."""
+        existing = {"id": 3, "project_id": 1, "title": "deployments", "position": 1}
+        with patch.object(
+            mock_client, "_request", side_effect=[existing, {}]
+        ) as mock_request:
+            result = mock_client.update_view(1, 3, title="updated", position=2)
+            assert result == {}
+            assert mock_request.call_count == 2
+            mock_request.assert_any_call("GET", "project/1/views/3")
+            mock_request.assert_any_call(
+                "PUT",
+                "project/1/views/3",
+                json={"id": 3, "project_id": 1, "title": "updated", "position": 2},
+            )
+
+    def test_delete_view(self, mock_client):
+        """Test delete_view method."""
+        with patch.object(mock_client, "_request", return_value={}) as mock_request:
+            result = mock_client.delete_view(1, 3)
+            assert result == {}
+            mock_request.assert_called_once_with("DELETE", "project/1/views/3")
+
     def test_list_templates_dict_response(self, mock_client):
         """Test list_templates when API returns dict instead of list."""
         mock_response = {"templates": [{"id": 1, "name": "test"}]}

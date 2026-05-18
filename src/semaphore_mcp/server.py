@@ -19,6 +19,7 @@ from .tools.repositories import RepositoryTools
 from .tools.schedules import ScheduleTools
 from .tools.tasks import TaskTools
 from .tools.templates import TemplateTools
+from .tools.views import ViewTools
 
 # Configure logging
 configure_logging()
@@ -60,6 +61,7 @@ class SemaphoreMCPServer:
         self.repository_tools = RepositoryTools(self.semaphore)
         self.access_key_tools = AccessKeyTools(self.semaphore)
         self.schedule_tools = ScheduleTools(self.semaphore)
+        self.view_tools = ViewTools(self.semaphore)
 
         # Register tools
         self.register_tools()
@@ -72,6 +74,13 @@ class SemaphoreMCPServer:
         self.mcp.tool()(self.project_tools.create_project)
         self.mcp.tool()(self.project_tools.update_project)
         self.mcp.tool()(self.project_tools.delete_project)
+
+        # View tools
+        self.mcp.tool()(self.view_tools.list_views)
+        self.mcp.tool()(self.view_tools.get_view)
+        self.mcp.tool()(self.view_tools.create_view)
+        self.mcp.tool()(self.view_tools.update_view)
+        self.mcp.tool()(self.view_tools.delete_view)
 
         # Template tools
         self.mcp.tool()(self.template_tools.list_templates)

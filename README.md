@@ -133,6 +133,8 @@ Once connected, you can interact with SemaphoreUI through natural conversation:
 
 **Projects:** `list_projects`, `get_project`, `create_project`, `update_project`, `delete_project`
 
+**Views:** `list_views`, `get_view`, `create_view`, `update_view`, `delete_view`
+
 **Templates:** `list_templates`, `get_template`, `create_template`, `update_template`, `delete_template`
 
 **Schedules:** `list_schedules`, `list_template_schedules`, `get_schedule`, `create_schedule`, `update_schedule`, `set_schedule_active`, `delete_schedule`, `validate_schedule_cron_format`

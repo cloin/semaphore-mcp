@@ -17,6 +17,7 @@ from semaphore_mcp.tools.repositories import RepositoryTools
 from semaphore_mcp.tools.schedules import ScheduleTools
 from semaphore_mcp.tools.tasks import TaskTools
 from semaphore_mcp.tools.templates import TemplateTools
+from semaphore_mcp.tools.views import ViewTools
 
 # =============================================================================
 # Mock API Client Fixtures
@@ -74,6 +75,12 @@ async def access_key_tools(mock_semaphore_client):
 async def schedule_tools(mock_semaphore_client):
     """Create a ScheduleTools instance with a mock API client."""
     return ScheduleTools(mock_semaphore_client)
+
+
+@pytest_asyncio.fixture
+async def view_tools(mock_semaphore_client):
+    """Create a ViewTools instance with a mock API client."""
+    return ViewTools(mock_semaphore_client)
 
 
 # =============================================================================
@@ -144,6 +151,15 @@ def sample_templates():
     return [
         {"id": 1, "name": "Template 1", "project_id": 1, "playbook": "playbook1.yml"},
         {"id": 2, "name": "Template 2", "project_id": 1, "playbook": "playbook2.yml"},
+    ]
+
+
+@pytest.fixture
+def sample_views():
+    """Standard view list for testing."""
+    return [
+        {"id": 1, "title": "Deployments", "project_id": 1, "position": 1},
+        {"id": 2, "title": "Maintenance", "project_id": 1, "position": 2},
     ]
 
 
