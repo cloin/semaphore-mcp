@@ -24,6 +24,15 @@ EXPECTED_TOOLS = {
     "update_template",
     "delete_template",
     "stop_all_template_tasks",
+    # Schedule tools (8)
+    "list_schedules",
+    "list_template_schedules",
+    "get_schedule",
+    "create_schedule",
+    "update_schedule",
+    "set_schedule_active",
+    "delete_schedule",
+    "validate_schedule_cron_format",
     # Task tools (11) - restart_task and bulk_restart_tasks are commented out in tasks.py
     "list_tasks",
     "get_task",

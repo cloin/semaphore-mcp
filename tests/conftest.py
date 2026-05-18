@@ -14,6 +14,7 @@ from semaphore_mcp.tools.access_keys import AccessKeyTools
 from semaphore_mcp.tools.environments import EnvironmentTools
 from semaphore_mcp.tools.projects import ProjectTools
 from semaphore_mcp.tools.repositories import RepositoryTools
+from semaphore_mcp.tools.schedules import ScheduleTools
 from semaphore_mcp.tools.tasks import TaskTools
 from semaphore_mcp.tools.templates import TemplateTools
 
@@ -67,6 +68,12 @@ async def repository_tools(mock_semaphore_client):
 async def access_key_tools(mock_semaphore_client):
     """Create an AccessKeyTools instance with a mock API client."""
     return AccessKeyTools(mock_semaphore_client)
+
+
+@pytest_asyncio.fixture
+async def schedule_tools(mock_semaphore_client):
+    """Create a ScheduleTools instance with a mock API client."""
+    return ScheduleTools(mock_semaphore_client)
 
 
 # =============================================================================
@@ -219,5 +226,34 @@ def sample_access_keys():
             "name": "Login Key",
             "project_id": 1,
             "type": "login_password",
+        },
+    ]
+
+
+@pytest.fixture
+def sample_schedules():
+    """Standard schedule list for testing."""
+    return [
+        {
+            "id": 1,
+            "project_id": 1,
+            "template_id": 10,
+            "name": "Nightly deploy",
+            "cron_format": "0 0 * * *",
+            "active": True,
+            "type": "",
+            "tpl_name": "Deploy",
+        },
+        {
+            "id": 2,
+            "project_id": 1,
+            "template_id": 11,
+            "name": "One-time maintenance",
+            "cron_format": "",
+            "active": False,
+            "type": "run_at",
+            "run_at": "2026-05-19T12:00:00Z",
+            "delete_after_run": True,
+            "tpl_name": "Maintenance",
         },
     ]

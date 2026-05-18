@@ -8,6 +8,7 @@ from .access_keys import AccessKeyTools
 from .environments import EnvironmentTools
 from .projects import ProjectTools
 from .repositories import RepositoryTools
+from .schedules import ScheduleTools
 from .tasks import TaskTools
 from .templates import TemplateTools
 
@@ -18,4 +19,5 @@ __all__ = [
     "TaskTools",
     "EnvironmentTools",
     "RepositoryTools",
+    "ScheduleTools",
 ]

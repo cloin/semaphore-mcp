@@ -384,13 +384,13 @@ class TestTaskExecutionE2E:
         """Test getting raw output from a completed task."""
         template, project_id = task_test_template
 
-        # Run a task and wait for completion
+        # Start the task, then poll for completion to avoid holding the Inspector
+        # request open long enough to hit its internal MCP request timeout.
         run_result = inspector.call_tool(
             "run_task",
             {
                 "template_id": template["id"],
                 "project_id": project_id,
-                "follow": True,
             },
         )
         run_data = parse_mcp_response(run_result)

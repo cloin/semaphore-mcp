@@ -135,6 +135,8 @@ Once connected, you can interact with SemaphoreUI through natural conversation:
 
 **Templates:** `list_templates`, `get_template`, `create_template`, `update_template`, `delete_template`
 
+**Schedules:** `list_schedules`, `list_template_schedules`, `get_schedule`, `create_schedule`, `update_schedule`, `set_schedule_active`, `delete_schedule`, `validate_schedule_cron_format`
+
 **Tasks:** `list_tasks`, `get_task`, `run_task`, `stop_task`, `get_task_raw_output`, `filter_tasks`, `bulk_stop_tasks`
 
 **Analysis:** `analyze_task_failure`, `bulk_analyze_failures`, `get_latest_failed_task`

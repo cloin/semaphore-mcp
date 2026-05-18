@@ -16,6 +16,7 @@ from .tools.access_keys import AccessKeyTools
 from .tools.environments import EnvironmentTools
 from .tools.projects import ProjectTools
 from .tools.repositories import RepositoryTools
+from .tools.schedules import ScheduleTools
 from .tools.tasks import TaskTools
 from .tools.templates import TemplateTools
 
@@ -58,6 +59,7 @@ class SemaphoreMCPServer:
         self.environment_tools = EnvironmentTools(self.semaphore)
         self.repository_tools = RepositoryTools(self.semaphore)
         self.access_key_tools = AccessKeyTools(self.semaphore)
+        self.schedule_tools = ScheduleTools(self.semaphore)
 
         # Register tools
         self.register_tools()
@@ -78,6 +80,16 @@ class SemaphoreMCPServer:
         self.mcp.tool()(self.template_tools.update_template)
         self.mcp.tool()(self.template_tools.delete_template)
         self.mcp.tool()(self.template_tools.stop_all_template_tasks)
+
+        # Schedule tools
+        self.mcp.tool()(self.schedule_tools.list_schedules)
+        self.mcp.tool()(self.schedule_tools.list_template_schedules)
+        self.mcp.tool()(self.schedule_tools.get_schedule)
+        self.mcp.tool()(self.schedule_tools.create_schedule)
+        self.mcp.tool()(self.schedule_tools.update_schedule)
+        self.mcp.tool()(self.schedule_tools.set_schedule_active)
+        self.mcp.tool()(self.schedule_tools.delete_schedule)
+        self.mcp.tool()(self.schedule_tools.validate_schedule_cron_format)
 
         # Task tools
         self.mcp.tool()(self.task_tools.list_tasks)
