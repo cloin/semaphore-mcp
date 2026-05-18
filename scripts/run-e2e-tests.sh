@@ -20,10 +20,14 @@ SEMAPHORE_ADMIN_NAME="${SEMAPHORE_ADMIN_NAME:-admin}"
 SEMAPHORE_ADMIN_EMAIL="${SEMAPHORE_ADMIN_EMAIL:-admin@localhost}"
 MCP_SERVER_URL="${MCP_SERVER_URL:-http://localhost:8000}"
 COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.test.yml}"
+COOKIE_FILE=""
 
 # Cleanup function
 cleanup() {
     echo -e "\n${YELLOW}🧹 Cleaning up...${NC}"
+    if [ -n "$COOKIE_FILE" ]; then
+        rm -f "$COOKIE_FILE"
+    fi
     docker-compose -f "$COMPOSE_FILE" down -v 2>/dev/null || true
     echo -e "${GREEN}✅ Cleanup complete${NC}"
 }
@@ -80,7 +84,6 @@ sleep 2  # Give Semaphore a moment to fully initialize
 
 # Create a temp file for cookies
 COOKIE_FILE=$(mktemp)
-trap "rm -f $COOKIE_FILE" EXIT
 
 # Login to get session cookie
 LOGIN_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -c "$COOKIE_FILE" -X POST http://localhost:3000/api/auth/login \
@@ -152,52 +155,31 @@ echo -e "${GREEN}✅ MCP server is responding${NC}"
 
 # Determine Python command (prefer uv run if available)
 if command -v uv &> /dev/null && [ -f "pyproject.toml" ]; then
-    PYTHON_CMD="uv run python3"
     PYTEST_CMD="uv run pytest"
 else
-    PYTHON_CMD="python3"
     PYTEST_CMD="python3 -m pytest"
 fi
 
-# Test 1: Tool Registration
-echo -e "\n${YELLOW}Test 1: Tool Registration${NC}"
-$PYTHON_CMD tests/e2e/test_tool_registration.py
-TEST1_STATUS=$?
-
-# Test 2: Per-category workflow tests (using pytest)
-echo -e "\n${YELLOW}Test 2: Project & Environment Workflow Tests${NC}"
-$PYTEST_CMD tests/e2e/test_projects_e2e.py tests/e2e/test_environments_e2e.py -v --tb=short
-TEST2_STATUS=$?
-
-# Test 3: Comprehensive Scenario (optional - requires full project setup)
-echo -e "\n${YELLOW}Test 3: Comprehensive Scenario${NC}"
-# python3 tests/e2e/test_comprehensive_scenario.py
-# TEST3_STATUS=$?
-TEST3_STATUS=0  # Skip for now - requires template/repository setup
-echo -e "${YELLOW}⚠️  Comprehensive scenario skipped (requires full project setup)${NC}"
+# Match the GitHub Actions integration workflow by running the full E2E suite.
+echo -e "\n${YELLOW}Full E2E Suite${NC}"
+set +e
+$PYTEST_CMD tests/e2e/ -v --tb=short
+TEST_STATUS=$?
+set -e
 
 # Step 7: Summary
 echo -e "\n${BLUE}========================================${NC}"
 echo -e "${BLUE}  Test Summary${NC}"
 echo -e "${BLUE}========================================${NC}"
 
-TOTAL_TESTS=2
-PASSED_TESTS=0
-
-[ $TEST1_STATUS -eq 0 ] && PASSED_TESTS=$((PASSED_TESTS + 1))
-[ $TEST2_STATUS -eq 0 ] && PASSED_TESTS=$((PASSED_TESTS + 1))
-# [ $TEST3_STATUS -eq 0 ] && PASSED_TESTS=$((PASSED_TESTS + 1))
-
-echo -e "Tool Registration:       $([ $TEST1_STATUS -eq 0 ] && echo -e "${GREEN}PASSED${NC}" || echo -e "${RED}FAILED${NC}")"
-echo -e "Workflow Tests:          $([ $TEST2_STATUS -eq 0 ] && echo -e "${GREEN}PASSED${NC}" || echo -e "${RED}FAILED${NC}")"
-# echo -e "Comprehensive Scenario:  $([ $TEST3_STATUS -eq 0 ] && echo -e "${GREEN}PASSED${NC}" || echo -e "${RED}FAILED${NC}")"
+echo -e "Full E2E Suite:          $([ $TEST_STATUS -eq 0 ] && echo -e "${GREEN}PASSED${NC}" || echo -e "${RED}FAILED${NC}")"
 
 echo -e "\n${BLUE}========================================${NC}"
-if [ $PASSED_TESTS -eq $TOTAL_TESTS ]; then
-    echo -e "${GREEN}✅ All tests passed! ($PASSED_TESTS/$TOTAL_TESTS)${NC}"
+if [ $TEST_STATUS -eq 0 ]; then
+    echo -e "${GREEN}✅ All tests passed!${NC}"
     EXIT_CODE=0
 else
-    echo -e "${RED}❌ Some tests failed ($PASSED_TESTS/$TOTAL_TESTS passed)${NC}"
+    echo -e "${RED}❌ E2E tests failed${NC}"
     EXIT_CODE=1
 fi
 echo -e "${BLUE}========================================${NC}"

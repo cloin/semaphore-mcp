@@ -10,20 +10,29 @@ from typing import Any, Optional
 
 import requests
 
+DEFAULT_REQUEST_TIMEOUT = 30.0
+
 
 class SemaphoreAPIClient:
     """Client for interacting with the SemaphoreUI API."""
 
-    def __init__(self, base_url: str, token: Optional[str] = None):
+    def __init__(
+        self,
+        base_url: str,
+        token: Optional[str] = None,
+        request_timeout: float = DEFAULT_REQUEST_TIMEOUT,
+    ):
         """
         Initialize the SemaphoreUI API client.
 
         Args:
             base_url: Base URL of the SemaphoreUI API (e.g., "http://localhost:3000")
             token: Optional API token for authentication
+            request_timeout: Timeout in seconds for SemaphoreUI API requests
         """
         self.base_url = base_url.rstrip("/")
         self.token = token or os.environ.get("SEMAPHORE_API_TOKEN")
+        self.request_timeout = request_timeout
         self.session = requests.Session()
 
         if self.token:
@@ -49,6 +58,7 @@ class SemaphoreAPIClient:
             requests.exceptions.HTTPError: If the request fails
         """
         url = f"{self.base_url}/api/{endpoint}"
+        kwargs.setdefault("timeout", self.request_timeout)
         response = self.session.request(method, url, **kwargs)
 
         try:
@@ -439,7 +449,7 @@ class SemaphoreAPIClient:
 
     def get_task(self, project_id: int, task_id: int) -> dict[str, Any]:
         """Get a task by ID."""
-        return self._request("GET", f"project/{project_id}/task/{task_id}")
+        return self._request("GET", f"project/{project_id}/tasks/{task_id}")
 
     def run_task(
         self,
@@ -513,7 +523,7 @@ class SemaphoreAPIClient:
     def get_task_raw_output(self, project_id: int, task_id: int) -> str:
         """Get raw task output."""
         url = f"{self.base_url}/api/project/{project_id}/tasks/{task_id}/raw_output"
-        response = self.session.request("GET", url)
+        response = self.session.request("GET", url, timeout=self.request_timeout)
         response.raise_for_status()
 
         # Return raw text content instead of trying to parse as JSON

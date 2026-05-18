@@ -103,7 +103,7 @@ class TaskTools(BaseTool):
                 filtered_tasks = [
                     t
                     for t in filtered_tasks
-                    if t.get("status") == self.STATUS_MAPPING.get(status)
+                    if t.get("status") == self.STATUS_MAPPING.get(status, status)
                 ]
             if tags:
                 filtered_tasks = [
@@ -389,10 +389,10 @@ class TaskTools(BaseTool):
                 return response
 
             except requests.exceptions.HTTPError as http_err:
+                http_response = http_err.response
                 status_code = (
-                    http_err.response.status_code
-                    if hasattr(http_err, "response")
-                    and hasattr(http_err.response, "status_code")
+                    http_response.status_code
+                    if http_response is not None
                     else "unknown"
                 )
                 error_msg = (
