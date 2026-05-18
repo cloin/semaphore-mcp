@@ -208,6 +208,163 @@ class TestSemaphoreAPIClientComprehensive:
             result = mock_client.restart_task(1, 1)
             assert result == mock_response
 
+    def test_list_schedules_dict_response(self, mock_client):
+        """Test list_schedules when API returns dict instead of list."""
+        mock_response = {"schedules": [{"id": 1, "name": "nightly"}]}
+        with patch.object(mock_client, "_request", return_value=mock_response):
+            result = mock_client.list_schedules(1)
+            assert result == []
+
+    def test_list_schedules_list_response(self, mock_client):
+        """Test list_schedules when API returns list."""
+        mock_response = [{"id": 1, "name": "nightly"}]
+        with patch.object(mock_client, "_request", return_value=mock_response):
+            result = mock_client.list_schedules(1)
+            assert result == mock_response
+
+    def test_list_template_schedules(self, mock_client):
+        """Test list_template_schedules method."""
+        mock_response = [{"id": 1, "template_id": 2}]
+        with patch.object(
+            mock_client, "_request", return_value=mock_response
+        ) as mock_request:
+            result = mock_client.list_template_schedules(1, 2)
+            assert result == mock_response
+            mock_request.assert_called_once_with(
+                "GET", "project/1/templates/2/schedules"
+            )
+
+    def test_get_schedule(self, mock_client):
+        """Test get_schedule method."""
+        mock_response = {"id": 1, "name": "nightly"}
+        with patch.object(
+            mock_client, "_request", return_value=mock_response
+        ) as mock_request:
+            result = mock_client.get_schedule(1, 1)
+            assert result == mock_response
+            mock_request.assert_called_once_with("GET", "project/1/schedules/1")
+
+    def test_create_cron_schedule(self, mock_client):
+        """Test create_schedule method for cron schedules."""
+        mock_response = {"id": 1, "name": "nightly"}
+        with patch.object(
+            mock_client, "_request", return_value=mock_response
+        ) as mock_request:
+            result = mock_client.create_schedule(
+                1,
+                2,
+                "nightly",
+                cron_format="0 0 * * *",
+                active=False,
+                task_params={"message": "scheduled"},
+            )
+            assert result == mock_response
+            mock_request.assert_called_once_with(
+                "POST",
+                "project/1/schedules",
+                json={
+                    "project_id": 1,
+                    "template_id": 2,
+                    "name": "nightly",
+                    "active": False,
+                    "type": "",
+                    "cron_format": "0 0 * * *",
+                    "task_params": {"message": "scheduled"},
+                },
+            )
+
+    def test_create_run_at_schedule(self, mock_client):
+        """Test create_schedule method for one-time schedules."""
+        mock_response = {"id": 1, "type": "run_at"}
+        with patch.object(
+            mock_client, "_request", return_value=mock_response
+        ) as mock_request:
+            result = mock_client.create_schedule(
+                1,
+                2,
+                "maintenance",
+                active=False,
+                schedule_type="run_at",
+                run_at="2026-05-19T12:00:00Z",
+                delete_after_run=True,
+            )
+            assert result == mock_response
+            mock_request.assert_called_once_with(
+                "POST",
+                "project/1/schedules",
+                json={
+                    "project_id": 1,
+                    "template_id": 2,
+                    "name": "maintenance",
+                    "active": False,
+                    "type": "run_at",
+                    "run_at": "2026-05-19T12:00:00Z",
+                    "delete_after_run": True,
+                },
+            )
+
+    def test_update_schedule_preserves_existing_fields(self, mock_client):
+        """Test update_schedule fetches existing schedule and preserves fields."""
+        existing = {
+            "id": 3,
+            "project_id": 1,
+            "template_id": 2,
+            "name": "nightly",
+            "cron_format": "0 0 * * *",
+            "active": False,
+            "type": "",
+            "delete_after_run": False,
+        }
+        with patch.object(
+            mock_client, "_request", side_effect=[existing, {}]
+        ) as mock_request:
+            result = mock_client.update_schedule(1, 3, name="updated", active=True)
+            assert result == {}
+            assert mock_request.call_count == 2
+            mock_request.assert_any_call("GET", "project/1/schedules/3")
+            mock_request.assert_any_call(
+                "PUT",
+                "project/1/schedules/3",
+                json={
+                    "id": 3,
+                    "project_id": 1,
+                    "template_id": 2,
+                    "name": "updated",
+                    "cron_format": "0 0 * * *",
+                    "active": True,
+                    "type": "",
+                    "run_at": None,
+                    "delete_after_run": False,
+                },
+            )
+
+    def test_set_schedule_active(self, mock_client):
+        """Test set_schedule_active method."""
+        with patch.object(mock_client, "_request", return_value={}) as mock_request:
+            result = mock_client.set_schedule_active(1, 3, False)
+            assert result == {}
+            mock_request.assert_called_once_with(
+                "PUT", "project/1/schedules/3/active", json={"active": False}
+            )
+
+    def test_delete_schedule(self, mock_client):
+        """Test delete_schedule method."""
+        with patch.object(mock_client, "_request", return_value={}) as mock_request:
+            result = mock_client.delete_schedule(1, 3)
+            assert result == {}
+            mock_request.assert_called_once_with("DELETE", "project/1/schedules/3")
+
+    def test_validate_schedule_cron_format(self, mock_client):
+        """Test validate_schedule_cron_format method."""
+        with patch.object(mock_client, "_request", return_value={}) as mock_request:
+            result = mock_client.validate_schedule_cron_format(1, "0 0 * * *")
+            assert result == {}
+            mock_request.assert_called_once_with(
+                "POST",
+                "project/1/schedules/validate",
+                json={"cron_format": "0 0 * * *"},
+            )
+
     def test_list_environments_dict_response(self, mock_client):
         """Test list_environments when API returns dict instead of list."""
         mock_response = {"environments": [{"id": 1, "name": "test"}]}
@@ -723,6 +880,27 @@ class TestAPIClientErrorHandling:
                 mock_client._request("GET", "project/999")
             assert "Resource not found (404)" in str(exc_info.value)
             assert "may have been deleted" in str(exc_info.value)
+
+    def test_request_http_error_includes_response_body(self, mock_client):
+        """Test that HTTP errors include Semaphore's response body."""
+        import requests
+
+        mock_response = Mock()
+        mock_response.status_code = 400
+        mock_response.content = b'{"error":"Cron: empty spec string"}'
+        mock_response.text = '{"error":"Cron: empty spec string"}'
+        http_error = requests.exceptions.HTTPError(response=mock_response)
+        mock_response.raise_for_status.side_effect = http_error
+
+        with patch.object(mock_client.session, "request", return_value=mock_response):
+            with pytest.raises(requests.exceptions.HTTPError) as exc_info:
+                mock_client._request("POST", "project/1/schedules")
+            assert (
+                "POST http://test.example.com/api/project/1/schedules failed with 400"
+                in str(exc_info.value)
+            )
+            assert "Cron: empty spec string" in str(exc_info.value)
+            assert exc_info.value.response is mock_response
 
     def test_request_invalid_json_response(self, mock_client):
         """Test handling of invalid JSON responses."""

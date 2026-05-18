@@ -71,6 +71,13 @@ class SemaphoreAPIClient:
                     f"The requested resource may have been deleted or the ID may be incorrect.",
                     response=response,
                 ) from e
+            response_body = response.text.strip()
+            if response_body:
+                raise requests.exceptions.HTTPError(
+                    f"{method} {url} failed with {response.status_code}: "
+                    f"{response_body[:500]}",
+                    response=response,
+                ) from e
             raise
 
         if response.content:
@@ -439,6 +446,173 @@ class SemaphoreAPIClient:
         """
         return self._request(
             "POST", f"project/{project_id}/templates/{template_id}/stop_all_tasks"
+        )
+
+    # Schedule endpoints
+    def list_schedules(self, project_id: int) -> list[dict[str, Any]]:
+        """List all schedules for a project."""
+        result = self._request("GET", f"project/{project_id}/schedules")
+        return result if isinstance(result, list) else []
+
+    def list_template_schedules(
+        self, project_id: int, template_id: int
+    ) -> list[dict[str, Any]]:
+        """List schedules attached to a template."""
+        result = self._request(
+            "GET", f"project/{project_id}/templates/{template_id}/schedules"
+        )
+        return result if isinstance(result, list) else []
+
+    def get_schedule(self, project_id: int, schedule_id: int) -> dict[str, Any]:
+        """Get a schedule by ID."""
+        return self._request("GET", f"project/{project_id}/schedules/{schedule_id}")
+
+    def create_schedule(
+        self,
+        project_id: int,
+        template_id: int,
+        name: str,
+        cron_format: Optional[str] = None,
+        active: bool = True,
+        schedule_type: str = "",
+        run_at: Optional[str] = None,
+        task_params: Optional[dict[str, Any]] = None,
+        delete_after_run: Optional[bool] = None,
+        repository_id: Optional[int] = None,
+    ) -> dict[str, Any]:
+        """Create a schedule for a project.
+
+        Args:
+            project_id: Project ID
+            template_id: Template ID to run
+            name: Schedule name
+            cron_format: Cron expression for recurring schedules
+            active: Whether the schedule is enabled
+            schedule_type: Schedule type, either "" for cron or "run_at"
+            run_at: RFC3339 timestamp for one-time schedules
+            task_params: Optional task parameters to pass when the schedule runs
+            delete_after_run: Delete one-time schedule after it runs
+            repository_id: Optional repository ID for commit-check schedules
+
+        Returns:
+            Created schedule information
+        """
+        payload: dict[str, Any] = {
+            "project_id": project_id,
+            "template_id": template_id,
+            "name": name,
+            "active": active,
+            "type": schedule_type,
+        }
+
+        if cron_format is not None:
+            payload["cron_format"] = cron_format
+        if run_at is not None:
+            payload["run_at"] = run_at
+        if task_params is not None:
+            payload["task_params"] = task_params
+        if delete_after_run is not None:
+            payload["delete_after_run"] = delete_after_run
+        if repository_id is not None:
+            payload["repository_id"] = repository_id
+
+        return self._request("POST", f"project/{project_id}/schedules", json=payload)
+
+    def update_schedule(
+        self,
+        project_id: int,
+        schedule_id: int,
+        template_id: Optional[int] = None,
+        name: Optional[str] = None,
+        cron_format: Optional[str] = None,
+        active: Optional[bool] = None,
+        schedule_type: Optional[str] = None,
+        run_at: Optional[str] = None,
+        task_params: Optional[dict[str, Any]] = None,
+        delete_after_run: Optional[bool] = None,
+        repository_id: Optional[int] = None,
+    ) -> dict[str, Any]:
+        """Update an existing schedule.
+
+        Args:
+            project_id: Project ID
+            schedule_id: Schedule ID
+            template_id: Template ID to run
+            name: Schedule name
+            cron_format: Cron expression for recurring schedules
+            active: Whether the schedule is enabled
+            schedule_type: Schedule type, either "" for cron or "run_at"
+            run_at: RFC3339 timestamp for one-time schedules
+            task_params: Optional task parameters to pass when the schedule runs
+            delete_after_run: Delete one-time schedule after it runs
+            repository_id: Optional repository ID for commit-check schedules
+
+        Returns:
+            Empty dict on success
+        """
+        existing = self.get_schedule(project_id, schedule_id)
+        payload: dict[str, Any] = {
+            "id": schedule_id,
+            "project_id": project_id,
+            "template_id": existing.get("template_id", 0),
+            "name": existing.get("name", ""),
+            "cron_format": existing.get("cron_format", ""),
+            "active": existing.get("active", False),
+            "type": existing.get("type", ""),
+            "run_at": existing.get("run_at"),
+            "delete_after_run": existing.get("delete_after_run", False),
+        }
+
+        if existing.get("task_params") is not None:
+            payload["task_params"] = existing["task_params"]
+        if "repository_id" in existing:
+            payload["repository_id"] = existing.get("repository_id")
+
+        if template_id is not None:
+            payload["template_id"] = template_id
+        if name is not None:
+            payload["name"] = name
+        if cron_format is not None:
+            payload["cron_format"] = cron_format
+        if active is not None:
+            payload["active"] = active
+        if schedule_type is not None:
+            payload["type"] = schedule_type
+        if run_at is not None:
+            payload["run_at"] = run_at
+        if task_params is not None:
+            payload["task_params"] = task_params
+        if delete_after_run is not None:
+            payload["delete_after_run"] = delete_after_run
+        if repository_id is not None:
+            payload["repository_id"] = repository_id
+
+        return self._request(
+            "PUT", f"project/{project_id}/schedules/{schedule_id}", json=payload
+        )
+
+    def set_schedule_active(
+        self, project_id: int, schedule_id: int, active: bool
+    ) -> dict[str, Any]:
+        """Enable or disable a schedule."""
+        return self._request(
+            "PUT",
+            f"project/{project_id}/schedules/{schedule_id}/active",
+            json={"active": active},
+        )
+
+    def delete_schedule(self, project_id: int, schedule_id: int) -> dict[str, Any]:
+        """Delete a schedule by ID."""
+        return self._request("DELETE", f"project/{project_id}/schedules/{schedule_id}")
+
+    def validate_schedule_cron_format(
+        self, project_id: int, cron_format: str
+    ) -> dict[str, Any]:
+        """Validate a schedule cron expression."""
+        return self._request(
+            "POST",
+            f"project/{project_id}/schedules/validate",
+            json={"cron_format": cron_format},
         )
 
     # Task endpoints
