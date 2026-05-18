@@ -64,6 +64,22 @@ class TestTaskTools:
         assert len(result["tasks"]) == 2
 
     @pytest.mark.asyncio
+    async def test_list_tasks_with_raw_status_filter(self, task_tools):
+        """Test list_tasks accepts raw Semaphore statuses."""
+        project_id = 1
+        mock_tasks = [
+            {"id": 1, "created": "2023-06-01", "status": "success"},
+            {"id": 2, "created": "2023-06-02", "status": "error"},
+            {"id": 3, "created": "2023-06-03", "status": "running"},
+        ]
+        task_tools.semaphore.list_tasks.return_value = mock_tasks
+
+        result = await task_tools.list_tasks(project_id, status="success")
+
+        assert result["tasks"] == [mock_tasks[0]]
+        assert result["shown"] == 1
+
+    @pytest.mark.asyncio
     async def test_list_tasks_error(self, task_tools):
         """Test list_tasks method with error."""
         # Set up the mock to raise an exception

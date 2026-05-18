@@ -3,7 +3,7 @@ name: Test Published Package
 # Run this workflow after publishing to PyPI
 on:
   workflow_run:
-    workflows: ["Publish to PyPI"]
+    workflows: ["Release and Publish"]
     types:
       - completed
   # Also allow manual trigger
@@ -42,10 +42,15 @@ jobs:
 
       - name: Install package from PyPI
         run: |
+          PACKAGE="semaphore-mcp"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            PACKAGE="semaphore-mcp==${{ inputs.version }}"
+          fi
+
           if [ "${{ matrix.install-method }}" = "uv" ]; then
-            uv pip install --system semaphore-mcp
+            uv pip install --system "$PACKAGE"
           else
-            pip install semaphore-mcp
+            pip install "$PACKAGE"
           fi
 
       - name: Test console script

@@ -40,15 +40,31 @@ class TestSemaphoreAPIClientComprehensive:
 
     def test_request_empty_response(self, mock_client, empty_response):
         """Test _request method with empty response content."""
-        with patch.object(mock_client.session, "request", return_value=empty_response):
+        with patch.object(
+            mock_client.session, "request", return_value=empty_response
+        ) as mock_request:
             result = mock_client._request("GET", "test")
             assert result == {}
+            mock_request.assert_called_once_with(
+                "GET", "http://test.example.com/api/test", timeout=30.0
+            )
 
     def test_request_with_content(self, mock_client, mock_response):
         """Test _request method with response content."""
         with patch.object(mock_client.session, "request", return_value=mock_response):
             result = mock_client._request("GET", "test")
             assert result == {"result": "success"}
+
+    def test_request_preserves_explicit_timeout(self, mock_client, mock_response):
+        """Test _request does not override an explicit per-call timeout."""
+        with patch.object(
+            mock_client.session, "request", return_value=mock_response
+        ) as mock_request:
+            result = mock_client._request("GET", "test", timeout=5)
+            assert result == {"result": "success"}
+            mock_request.assert_called_once_with(
+                "GET", "http://test.example.com/api/test", timeout=5
+            )
 
     def test_list_projects_dict_response(self, mock_client):
         """Test list_projects when API returns dict instead of list."""
@@ -109,9 +125,12 @@ class TestSemaphoreAPIClientComprehensive:
     def test_get_task(self, mock_client):
         """Test get_task method."""
         mock_response = {"id": 1, "status": "success"}
-        with patch.object(mock_client, "_request", return_value=mock_response):
+        with patch.object(
+            mock_client, "_request", return_value=mock_response
+        ) as mock_request:
             result = mock_client.get_task(1, 1)
             assert result == mock_response
+            mock_request.assert_called_once_with("GET", "project/1/tasks/1")
 
     def test_run_task_basic(self, mock_client):
         """Test run_task method without environment."""
@@ -164,9 +183,16 @@ class TestSemaphoreAPIClientComprehensive:
         mock_response = Mock()
         mock_response.text = "raw task output"
         mock_response.raise_for_status.return_value = None
-        with patch.object(mock_client.session, "request", return_value=mock_response):
+        with patch.object(
+            mock_client.session, "request", return_value=mock_response
+        ) as mock_request:
             result = mock_client.get_task_raw_output(1, 1)
             assert result == "raw task output"
+            mock_request.assert_called_once_with(
+                "GET",
+                "http://test.example.com/api/project/1/tasks/1/raw_output",
+                timeout=30.0,
+            )
 
     def test_delete_task(self, mock_client):
         """Test delete_task method."""
@@ -748,6 +774,14 @@ class TestAPIClientInitialization:
         client = SemaphoreAPIClient("http://test.example.com", "test-token")
         assert "Authorization" in client.session.headers
         assert client.session.headers["Authorization"] == "Bearer test-token"
+        assert client.request_timeout == 30.0
+
+    def test_init_with_custom_request_timeout(self):
+        """Test client initialization with a custom request timeout."""
+        client = SemaphoreAPIClient(
+            "http://test.example.com", "test-token", request_timeout=10
+        )
+        assert client.request_timeout == 10
 
     def test_init_without_token(self):
         """Test client initialization without token."""
