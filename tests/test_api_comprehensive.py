@@ -87,6 +87,66 @@ class TestSemaphoreAPIClientComprehensive:
             result = mock_client.get_project(1)
             assert result == mock_response
 
+    def test_get_project_role(self, mock_client):
+        """Test get_project_role method."""
+        mock_response = {"role": "owner", "permissions": 0}
+        with patch.object(
+            mock_client, "_request", return_value=mock_response
+        ) as mock_request:
+            result = mock_client.get_project_role(1)
+            assert result == mock_response
+            mock_request.assert_called_once_with("GET", "project/1/role")
+
+    def test_list_project_users_dict_response(self, mock_client):
+        """Test list_project_users when API returns dict instead of list."""
+        mock_response = {"users": [{"id": 1, "role": "owner"}]}
+        with patch.object(mock_client, "_request", return_value=mock_response):
+            result = mock_client.list_project_users(1)
+            assert result == []
+
+    def test_list_project_users_list_response(self, mock_client):
+        """Test list_project_users when API returns list."""
+        mock_response = [{"id": 1, "role": "owner"}]
+        with patch.object(
+            mock_client, "_request", return_value=mock_response
+        ) as mock_request:
+            result = mock_client.list_project_users(1, sort="email", order="desc")
+            assert result == mock_response
+            mock_request.assert_called_once_with(
+                "GET",
+                "project/1/users",
+                params={"sort": "email", "order": "desc"},
+            )
+
+    def test_add_project_user(self, mock_client):
+        """Test add_project_user method."""
+        with patch.object(mock_client, "_request", return_value={}) as mock_request:
+            result = mock_client.add_project_user(1, 2, "guest")
+            assert result == {}
+            mock_request.assert_called_once_with(
+                "POST",
+                "project/1/users",
+                json={"user_id": 2, "role": "guest"},
+            )
+
+    def test_update_project_user(self, mock_client):
+        """Test update_project_user method."""
+        with patch.object(mock_client, "_request", return_value={}) as mock_request:
+            result = mock_client.update_project_user(1, 2, "manager")
+            assert result == {}
+            mock_request.assert_called_once_with(
+                "PUT",
+                "project/1/users/2",
+                json={"role": "manager"},
+            )
+
+    def test_remove_project_user(self, mock_client):
+        """Test remove_project_user method."""
+        with patch.object(mock_client, "_request", return_value={}) as mock_request:
+            result = mock_client.remove_project_user(1, 2)
+            assert result == {}
+            mock_request.assert_called_once_with("DELETE", "project/1/users/2")
+
     def test_list_views_dict_response(self, mock_client):
         """Test list_views when API returns dict instead of list."""
         mock_response = {"views": [{"id": 1, "title": "deployments"}]}

@@ -12,6 +12,7 @@ import pytest_asyncio
 
 from semaphore_mcp.tools.access_keys import AccessKeyTools
 from semaphore_mcp.tools.environments import EnvironmentTools
+from semaphore_mcp.tools.project_users import ProjectUserTools
 from semaphore_mcp.tools.projects import ProjectTools
 from semaphore_mcp.tools.repositories import RepositoryTools
 from semaphore_mcp.tools.schedules import ScheduleTools
@@ -45,6 +46,12 @@ async def task_tools(mock_semaphore_client):
 async def project_tools(mock_semaphore_client):
     """Create a ProjectTools instance with a mock API client."""
     return ProjectTools(mock_semaphore_client)
+
+
+@pytest_asyncio.fixture
+async def project_user_tools(mock_semaphore_client):
+    """Create a ProjectUserTools instance with a mock API client."""
+    return ProjectUserTools(mock_semaphore_client)
 
 
 @pytest_asyncio.fixture
@@ -142,6 +149,15 @@ def sample_projects():
     return [
         {"id": 1, "name": "Test Project 1"},
         {"id": 2, "name": "Test Project 2"},
+    ]
+
+
+@pytest.fixture
+def sample_project_users():
+    """Standard project user list for testing."""
+    return [
+        {"id": 1, "name": "Admin", "username": "admin", "role": "owner"},
+        {"id": 2, "name": "Operator", "username": "operator", "role": "manager"},
     ]
 
 

@@ -133,6 +133,8 @@ Once connected, you can interact with SemaphoreUI through natural conversation:
 
 **Projects:** `list_projects`, `get_project`, `create_project`, `update_project`, `delete_project`
 
+**Project users:** `get_project_role`, `list_project_users`, `add_project_user`, `update_project_user`, `remove_project_user`
+
 **Views:** `list_views`, `get_view`, `create_view`, `update_view`, `delete_view`
 
 **Templates:** `list_templates`, `get_template`, `create_template`, `update_template`, `delete_template`

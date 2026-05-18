@@ -184,6 +184,55 @@ class SemaphoreAPIClient:
         """
         return self._request("DELETE", f"project/{project_id}")
 
+    # Project user endpoints
+    def get_project_role(self, project_id: int) -> dict[str, Any]:
+        """Get current user's role and permissions for a project."""
+        return self._request("GET", f"project/{project_id}/role")
+
+    def list_project_users(
+        self,
+        project_id: int,
+        sort: str = "name",
+        order: str = "asc",
+    ) -> list[dict[str, Any]]:
+        """List users linked to a project."""
+        result = self._request(
+            "GET",
+            f"project/{project_id}/users",
+            params={"sort": sort, "order": order},
+        )
+        return result if isinstance(result, list) else []
+
+    def add_project_user(
+        self,
+        project_id: int,
+        user_id: int,
+        role: str,
+    ) -> dict[str, Any]:
+        """Link a user to a project with a role."""
+        return self._request(
+            "POST",
+            f"project/{project_id}/users",
+            json={"user_id": user_id, "role": role},
+        )
+
+    def update_project_user(
+        self,
+        project_id: int,
+        user_id: int,
+        role: str,
+    ) -> dict[str, Any]:
+        """Update a linked user's project role."""
+        return self._request(
+            "PUT",
+            f"project/{project_id}/users/{user_id}",
+            json={"role": role},
+        )
+
+    def remove_project_user(self, project_id: int, user_id: int) -> dict[str, Any]:
+        """Remove a user from a project."""
+        return self._request("DELETE", f"project/{project_id}/users/{user_id}")
+
     # View endpoints
     def list_views(self, project_id: int) -> list[dict[str, Any]]:
         """List all views for a project."""

@@ -19,6 +19,7 @@ class TestSemaphoreMCPServerCoverage:
         assert server.token == "test-token"
         assert server.semaphore is not None
         assert server.project_tools is not None
+        assert server.project_user_tools is not None
         assert server.template_tools is not None
         assert server.task_tools is not None
         assert server.environment_tools is not None
@@ -126,6 +127,7 @@ class TestSemaphoreMCPServerCoverage:
 
             # Verify all tool classes received the same semaphore client
             assert server.project_tools.semaphore == mock_semaphore
+            assert server.project_user_tools.semaphore == mock_semaphore
             assert server.template_tools.semaphore == mock_semaphore
             assert server.task_tools.semaphore == mock_semaphore
             assert server.environment_tools.semaphore == mock_semaphore
@@ -179,6 +181,7 @@ class TestSemaphoreMCPServerCoverage:
             "semaphore",
             "mcp",
             "project_tools",
+            "project_user_tools",
             "template_tools",
             "task_tools",
             "environment_tools",
