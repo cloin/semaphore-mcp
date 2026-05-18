@@ -14,6 +14,7 @@ from .api import create_client
 from .config import configure_logging, get_config
 from .tools.access_keys import AccessKeyTools
 from .tools.environments import EnvironmentTools
+from .tools.project_users import ProjectUserTools
 from .tools.projects import ProjectTools
 from .tools.repositories import RepositoryTools
 from .tools.schedules import ScheduleTools
@@ -55,6 +56,7 @@ class SemaphoreMCPServer:
 
         # Initialize tool classes
         self.project_tools = ProjectTools(self.semaphore)
+        self.project_user_tools = ProjectUserTools(self.semaphore)
         self.template_tools = TemplateTools(self.semaphore)
         self.task_tools = TaskTools(self.semaphore)
         self.environment_tools = EnvironmentTools(self.semaphore)
@@ -74,6 +76,13 @@ class SemaphoreMCPServer:
         self.mcp.tool()(self.project_tools.create_project)
         self.mcp.tool()(self.project_tools.update_project)
         self.mcp.tool()(self.project_tools.delete_project)
+
+        # Project user tools
+        self.mcp.tool()(self.project_user_tools.get_project_role)
+        self.mcp.tool()(self.project_user_tools.list_project_users)
+        self.mcp.tool()(self.project_user_tools.add_project_user)
+        self.mcp.tool()(self.project_user_tools.update_project_user)
+        self.mcp.tool()(self.project_user_tools.remove_project_user)
 
         # View tools
         self.mcp.tool()(self.view_tools.list_views)

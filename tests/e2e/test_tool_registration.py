@@ -17,6 +17,12 @@ EXPECTED_TOOLS = {
     "create_project",
     "update_project",
     "delete_project",
+    # Project user tools (5)
+    "get_project_role",
+    "list_project_users",
+    "add_project_user",
+    "update_project_user",
+    "remove_project_user",
     # View tools (5)
     "list_views",
     "get_view",
