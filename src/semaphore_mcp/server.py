@@ -84,6 +84,11 @@ class SemaphoreMCPServer:
         self.mcp.tool()(self.project_tools.create_project)
         self.mcp.tool()(self.project_tools.update_project)
         self.mcp.tool()(self.project_tools.delete_project)
+        self.mcp.tool()(self.project_tools.backup_project)
+        self.mcp.tool()(self.project_tools.restore_project_backup)
+        self.mcp.tool()(self.project_tools.validate_project_backup)
+        self.mcp.tool()(self.project_tools.summarize_project_backup)
+        self.mcp.tool()(self.project_tools.clone_project)
 
         # Project user tools
         self.mcp.tool()(self.project_user_tools.get_project_role)
