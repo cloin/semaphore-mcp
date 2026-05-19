@@ -16,12 +16,17 @@ EXPECTED_TOOLS = {
     "get_last_events",
     "list_project_events",
     "summarize_project_activity",
-    # Project tools (5)
+    # Project tools (10)
     "list_projects",
     "get_project",
     "create_project",
     "update_project",
     "delete_project",
+    "backup_project",
+    "restore_project_backup",
+    "validate_project_backup",
+    "summarize_project_backup",
+    "clone_project",
     # Project user tools (5)
     "get_project_role",
     "list_project_users",

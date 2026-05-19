@@ -188,6 +188,68 @@ def sample_events():
 
 
 @pytest.fixture
+def sample_project_backup():
+    """Sample Semaphore project backup payload for testing."""
+    return {
+        "meta": {
+            "name": "Source Project",
+            "alert": False,
+            "alert_chat": None,
+            "max_parallel_tasks": 0,
+            "type": None,
+        },
+        "templates": [
+            {
+                "name": "Deploy",
+                "playbook": "site.yml",
+                "arguments": "[]",
+                "description": "Deploy template",
+                "repository": "Demo Repo",
+                "inventory": "Local Inventory",
+                "environments": ["Empty Environment"],
+                "view": "Default",
+                "type": "",
+                "allow_override_args_in_task": False,
+                "suppress_success_alerts": False,
+            }
+        ],
+        "repositories": [
+            {
+                "name": "Demo Repo",
+                "git_url": "https://github.com/semaphoreui/semaphore-demo.git",
+                "git_branch": "main",
+                "ssh_key": "None",
+            }
+        ],
+        "keys": [{"name": "None", "type": "none"}],
+        "views": [{"title": "Default", "position": 0}],
+        "inventories": [
+            {
+                "name": "Local Inventory",
+                "inventory": "localhost,",
+                "ssh_key": "None",
+                "become_key": "None",
+                "type": "static",
+            }
+        ],
+        "environments": [
+            {
+                "name": "Empty Environment",
+                "password": None,
+                "json": "{}",
+                "env": None,
+            }
+        ],
+        "integrations": [],
+        "integration_aliases": [],
+        "schedules": [],
+        "secret_storages": [],
+        "roles": [],
+        "runners": [],
+    }
+
+
+@pytest.fixture
 def sample_project_users():
     """Standard project user list for testing."""
     return [

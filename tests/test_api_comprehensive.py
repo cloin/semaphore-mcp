@@ -876,6 +876,46 @@ class TestProjectCRUDOperations:
             result = mock_client.delete_project(1)
             assert result == mock_response
 
+    def test_backup_project(self, mock_client):
+        """Test backup_project method."""
+        mock_response = {"meta": {"name": "test-project"}}
+        with patch.object(
+            mock_client, "_request", return_value=mock_response
+        ) as mock_request:
+            result = mock_client.backup_project(1)
+            assert result == mock_response
+            mock_request.assert_called_once_with("GET", "project/1/backup")
+
+    def test_restore_project_backup(self, mock_client):
+        """Test restore_project_backup method."""
+        backup = {"meta": {"name": "test-project"}, "templates": []}
+        mock_response = {"id": 2, "name": "test-project"}
+        with patch.object(
+            mock_client, "_request", return_value=mock_response
+        ) as mock_request:
+            result = mock_client.restore_project_backup(backup)
+            assert result == mock_response
+            mock_request.assert_called_once_with(
+                "POST", "projects/restore", json=backup
+            )
+
+    def test_restore_project_backup_with_name_override(self, mock_client):
+        """Test restore_project_backup with project name override."""
+        backup = {"meta": {"name": "source-project"}, "templates": []}
+        mock_response = {"id": 2, "name": "restored-project"}
+        with patch.object(
+            mock_client, "_request", return_value=mock_response
+        ) as mock_request:
+            result = mock_client.restore_project_backup(
+                backup,
+                project_name="restored-project",
+            )
+            assert result == mock_response
+            args, kwargs = mock_request.call_args
+            assert args == ("POST", "projects/restore")
+            assert kwargs["json"]["meta"]["name"] == "restored-project"
+            assert backup["meta"]["name"] == "source-project"
+
 
 class TestTemplateCRUDOperations:
     """Test template CRUD operations in API client."""

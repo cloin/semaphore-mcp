@@ -6,6 +6,7 @@ This module provides a client for interacting with SemaphoreUI's API.
 
 import json
 import os
+from copy import deepcopy
 from typing import Any, Optional
 
 import requests
@@ -193,6 +194,29 @@ class SemaphoreAPIClient:
             Empty dict on success (204 response)
         """
         return self._request("DELETE", f"project/{project_id}")
+
+    def backup_project(self, project_id: int) -> dict[str, Any]:
+        """Export a project backup by ID."""
+        return self._request("GET", f"project/{project_id}/backup")
+
+    def restore_project_backup(
+        self,
+        backup: dict[str, Any],
+        project_name: Optional[str] = None,
+    ) -> dict[str, Any]:
+        """Restore a project from a Semaphore backup payload.
+
+        Args:
+            backup: Project backup payload from ``backup_project``.
+            project_name: Optional project name override for the restored project.
+
+        Returns:
+            Created project information.
+        """
+        payload = deepcopy(backup)
+        if project_name is not None:
+            payload.setdefault("meta", {})["name"] = project_name
+        return self._request("POST", "projects/restore", json=payload)
 
     # Project user endpoints
     def get_project_role(self, project_id: int) -> dict[str, Any]:
