@@ -145,6 +145,8 @@ Once connected, you can interact with SemaphoreUI through natural conversation:
 
 **Analysis:** `analyze_task_failure`, `bulk_analyze_failures`, `get_latest_failed_task`
 
+**Events:** `list_events`, `get_last_events`, `list_project_events`, `summarize_project_activity`
+
 **Environments:** `list_environments`, `get_environment`, `create_environment`, `update_environment`, `delete_environment`
 
 **Inventory:** `list_inventory`, `get_inventory`, `create_inventory`, `update_inventory`, `delete_inventory`

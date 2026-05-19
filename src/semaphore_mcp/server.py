@@ -14,6 +14,7 @@ from .api import create_client
 from .config import configure_logging, get_config
 from .tools.access_keys import AccessKeyTools
 from .tools.environments import EnvironmentTools
+from .tools.events import EventTools
 from .tools.project_users import ProjectUserTools
 from .tools.projects import ProjectTools
 from .tools.repositories import RepositoryTools
@@ -55,6 +56,7 @@ class SemaphoreMCPServer:
         self.mcp = FastMCP("semaphore", host=host, port=port)
 
         # Initialize tool classes
+        self.event_tools = EventTools(self.semaphore)
         self.project_tools = ProjectTools(self.semaphore)
         self.project_user_tools = ProjectUserTools(self.semaphore)
         self.template_tools = TemplateTools(self.semaphore)
@@ -70,6 +72,12 @@ class SemaphoreMCPServer:
 
     def register_tools(self):
         """Register MCP tools for SemaphoreUI."""
+        # Event tools
+        self.mcp.tool()(self.event_tools.list_events)
+        self.mcp.tool()(self.event_tools.get_last_events)
+        self.mcp.tool()(self.event_tools.list_project_events)
+        self.mcp.tool()(self.event_tools.summarize_project_activity)
+
         # Project tools
         self.mcp.tool()(self.project_tools.list_projects)
         self.mcp.tool()(self.project_tools.get_project)

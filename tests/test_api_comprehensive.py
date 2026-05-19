@@ -80,6 +80,33 @@ class TestSemaphoreAPIClientComprehensive:
             result = mock_client.list_projects()
             assert result == mock_response
 
+    def test_list_events_dict_response(self, mock_client):
+        """Test list_events when API returns dict instead of list."""
+        mock_response = {"events": [{"description": "Project created"}]}
+        with patch.object(mock_client, "_request", return_value=mock_response):
+            result = mock_client.list_events()
+            assert result == []
+
+    def test_list_events_list_response(self, mock_client):
+        """Test list_events when API returns list."""
+        mock_response = [{"description": "Project created"}]
+        with patch.object(
+            mock_client, "_request", return_value=mock_response
+        ) as mock_request:
+            result = mock_client.list_events()
+            assert result == mock_response
+            mock_request.assert_called_once_with("GET", "events")
+
+    def test_get_last_events(self, mock_client):
+        """Test get_last_events method."""
+        mock_response = [{"description": "Project updated"}]
+        with patch.object(
+            mock_client, "_request", return_value=mock_response
+        ) as mock_request:
+            result = mock_client.get_last_events()
+            assert result == mock_response
+            mock_request.assert_called_once_with("GET", "events/last")
+
     def test_get_project(self, mock_client):
         """Test get_project method."""
         mock_response = {"id": 1, "name": "test"}
@@ -146,6 +173,23 @@ class TestSemaphoreAPIClientComprehensive:
             result = mock_client.remove_project_user(1, 2)
             assert result == {}
             mock_request.assert_called_once_with("DELETE", "project/1/users/2")
+
+    def test_list_project_events_dict_response(self, mock_client):
+        """Test list_project_events when API returns dict instead of list."""
+        mock_response = {"events": [{"description": "Project created"}]}
+        with patch.object(mock_client, "_request", return_value=mock_response):
+            result = mock_client.list_project_events(1)
+            assert result == []
+
+    def test_list_project_events_list_response(self, mock_client):
+        """Test list_project_events when API returns list."""
+        mock_response = [{"description": "Project created"}]
+        with patch.object(
+            mock_client, "_request", return_value=mock_response
+        ) as mock_request:
+            result = mock_client.list_project_events(1)
+            assert result == mock_response
+            mock_request.assert_called_once_with("GET", "project/1/events")
 
     def test_list_views_dict_response(self, mock_client):
         """Test list_views when API returns dict instead of list."""
