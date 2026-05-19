@@ -18,6 +18,7 @@ class TestSemaphoreMCPServerCoverage:
         assert server.url == "http://test.example.com"
         assert server.token == "test-token"
         assert server.semaphore is not None
+        assert server.event_tools is not None
         assert server.project_tools is not None
         assert server.project_user_tools is not None
         assert server.template_tools is not None
@@ -126,6 +127,7 @@ class TestSemaphoreMCPServerCoverage:
             server = SemaphoreMCPServer("http://test.example.com", "test-token")
 
             # Verify all tool classes received the same semaphore client
+            assert server.event_tools.semaphore == mock_semaphore
             assert server.project_tools.semaphore == mock_semaphore
             assert server.project_user_tools.semaphore == mock_semaphore
             assert server.template_tools.semaphore == mock_semaphore
@@ -180,6 +182,7 @@ class TestSemaphoreMCPServerCoverage:
             "token",
             "semaphore",
             "mcp",
+            "event_tools",
             "project_tools",
             "project_user_tools",
             "template_tools",

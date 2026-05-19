@@ -96,6 +96,16 @@ class SemaphoreAPIClient:
         result = self._request("GET", "projects")
         return result if isinstance(result, list) else []
 
+    def list_events(self) -> list[dict[str, Any]]:
+        """List global events visible to the current user."""
+        result = self._request("GET", "events")
+        return result if isinstance(result, list) else []
+
+    def get_last_events(self) -> list[dict[str, Any]]:
+        """List the last 200 global events visible to the current user."""
+        result = self._request("GET", "events/last")
+        return result if isinstance(result, list) else []
+
     def get_project(self, project_id: int) -> dict[str, Any]:
         """Get a project by ID."""
         return self._request("GET", f"project/{project_id}")
@@ -232,6 +242,11 @@ class SemaphoreAPIClient:
     def remove_project_user(self, project_id: int, user_id: int) -> dict[str, Any]:
         """Remove a user from a project."""
         return self._request("DELETE", f"project/{project_id}/users/{user_id}")
+
+    def list_project_events(self, project_id: int) -> list[dict[str, Any]]:
+        """List events related to a project."""
+        result = self._request("GET", f"project/{project_id}/events")
+        return result if isinstance(result, list) else []
 
     # View endpoints
     def list_views(self, project_id: int) -> list[dict[str, Any]]:

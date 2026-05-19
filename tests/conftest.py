@@ -12,6 +12,7 @@ import pytest_asyncio
 
 from semaphore_mcp.tools.access_keys import AccessKeyTools
 from semaphore_mcp.tools.environments import EnvironmentTools
+from semaphore_mcp.tools.events import EventTools
 from semaphore_mcp.tools.project_users import ProjectUserTools
 from semaphore_mcp.tools.projects import ProjectTools
 from semaphore_mcp.tools.repositories import RepositoryTools
@@ -40,6 +41,12 @@ def mock_semaphore_client():
 async def task_tools(mock_semaphore_client):
     """Create a TaskTools instance with a mock API client."""
     return TaskTools(mock_semaphore_client)
+
+
+@pytest_asyncio.fixture
+async def event_tools(mock_semaphore_client):
+    """Create an EventTools instance with a mock API client."""
+    return EventTools(mock_semaphore_client)
 
 
 @pytest_asyncio.fixture
@@ -149,6 +156,34 @@ def sample_projects():
     return [
         {"id": 1, "name": "Test Project 1"},
         {"id": 2, "name": "Test Project 2"},
+    ]
+
+
+@pytest.fixture
+def sample_events():
+    """Standard event list for testing."""
+    return [
+        {
+            "project_id": 1,
+            "user_id": 1,
+            "object_id": 1,
+            "object_type": "project",
+            "description": "Project created",
+        },
+        {
+            "project_id": 1,
+            "user_id": 1,
+            "object_id": 2,
+            "object_type": "template",
+            "description": "Template created",
+        },
+        {
+            "project_id": 1,
+            "user_id": 2,
+            "object_id": 3,
+            "object_type": "task",
+            "description": "Task started",
+        },
     ]
 
 

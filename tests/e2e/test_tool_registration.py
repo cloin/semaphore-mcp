@@ -11,6 +11,11 @@ from mcp_inspector import MCPInspector  # noqa: E402
 
 # Expected tools organized by category
 EXPECTED_TOOLS = {
+    # Event tools (4)
+    "list_events",
+    "get_last_events",
+    "list_project_events",
+    "summarize_project_activity",
     # Project tools (5)
     "list_projects",
     "get_project",
