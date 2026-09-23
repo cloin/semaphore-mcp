@@ -1087,6 +1087,102 @@ class TestTemplateCRUDOperations:
                 json={"force": False},
             )
 
+    EXISTING_TEMPLATE = {
+        "id": 45,
+        "project_id": 2,
+        "name": "deploy",
+        "playbook": "deploy.yml",
+        "inventory_id": 3,
+        "repository_id": 4,
+        "environment_id": 5,
+        "environment_ids": [5, 6],
+        "app": "ansible",
+        "git_branch": "develop",
+        "survey_vars": [{"name": "version", "title": "Version"}],
+        "task_params": {"allow_override_limit": True},
+        "view_id": 7,
+        "allow_parallel_tasks": True,
+        "allow_override_branch_in_task": True,
+        "runner_tag": "fast",
+        # Added in SemaphoreUI v2.19
+        "executor_image": "registry.example.com/ansible:latest",
+        "jwt_params": {"enabled": True, "audience": ["vault"], "ttl": "5m"},
+    }
+
+    def _update(self, mock_client, **kwargs):
+        """Run update_template against EXISTING_TEMPLATE, return the PUT payload."""
+        with patch.object(
+            mock_client,
+            "_request",
+            side_effect=[dict(self.EXISTING_TEMPLATE), {}],
+        ) as mock_request:
+            mock_client.update_template(project_id=2, template_id=45, **kwargs)
+        method, endpoint = mock_request.call_args.args
+        assert (method, endpoint) == ("PUT", "project/2/templates/45")
+        return mock_request.call_args.kwargs["json"]
+
+    def test_update_template_git_branch_only_preserves_other_fields(self, mock_client):
+        """Updating only git_branch must not reset fields it does not touch."""
+        payload = self._update(mock_client, git_branch="main")
+        assert payload == {**self.EXISTING_TEMPLATE, "git_branch": "main"}
+        assert payload["allow_parallel_tasks"] is True
+
+    def test_update_template_can_disable_allow_parallel_tasks(self, mock_client):
+        """allow_parallel_tasks=False is sent explicitly."""
+        payload = self._update(mock_client, allow_parallel_tasks=False)
+        assert payload["allow_parallel_tasks"] is False
+        assert payload["runner_tag"] == "fast"
+
+    def test_update_template_new_fields(self, mock_client):
+        """allow_override_branch_in_task and runner_tag can be updated."""
+        payload = self._update(
+            mock_client, allow_override_branch_in_task=False, runner_tag="slow"
+        )
+        assert payload["allow_override_branch_in_task"] is False
+        assert payload["runner_tag"] == "slow"
+
+    def test_update_template_environment_id_overrides_environment_ids(
+        self, mock_client
+    ):
+        """Passing environment_id drops the copied environment_ids list."""
+        payload = self._update(mock_client, environment_id=9)
+        assert payload["environment_id"] == 9
+        assert "environment_ids" not in payload
+
+    def test_create_template_allow_parallel_tasks(self, mock_client):
+        """create_template sends allow_parallel_tasks and related fields."""
+        with patch.object(mock_client, "_request", return_value={"id": 1}) as req:
+            mock_client.create_template(
+                project_id=1,
+                name="t",
+                playbook="p.yml",
+                inventory_id=1,
+                repository_id=1,
+                environment_id=1,
+                allow_parallel_tasks=True,
+                allow_override_branch_in_task=True,
+                runner_tag="fast",
+            )
+        payload = req.call_args.kwargs["json"]
+        assert payload["allow_parallel_tasks"] is True
+        assert payload["allow_override_branch_in_task"] is True
+        assert payload["runner_tag"] == "fast"
+
+    def test_create_template_allow_parallel_tasks_defaults_false(self, mock_client):
+        """allow_parallel_tasks defaults to False, runner_tag is omitted."""
+        with patch.object(mock_client, "_request", return_value={"id": 1}) as req:
+            mock_client.create_template(
+                project_id=1,
+                name="t",
+                playbook="p.yml",
+                inventory_id=1,
+                repository_id=1,
+                environment_id=1,
+            )
+        payload = req.call_args.kwargs["json"]
+        assert payload["allow_parallel_tasks"] is False
+        assert "runner_tag" not in payload
+
 
 class TestAPIClientErrorHandling:
     """Test API client error handling."""

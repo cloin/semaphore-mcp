@@ -96,6 +96,9 @@ class TemplateTools(BaseTool):
         autorun: bool = False,
         view_id: Optional[int] = None,
         task_params: Optional[dict[str, Any]] = None,
+        allow_parallel_tasks: bool = False,
+        allow_override_branch_in_task: bool = False,
+        runner_tag: Optional[str] = None,
     ) -> dict[str, Any]:
         """Create a new template.
 
@@ -127,6 +130,9 @@ class TemplateTools(BaseTool):
                 - limit: Default limit (list of hosts/groups)
                 - tags: Default tags (list)
                 - skip_tags: Default skip tags (list)
+            allow_parallel_tasks: Allow several tasks of this template to run at once (default: False)
+            allow_override_branch_in_task: Allow overriding the git branch in task (default: False)
+            runner_tag: Runner tag (optional)
 
         Returns:
             Created template details
@@ -153,6 +159,9 @@ class TemplateTools(BaseTool):
                 autorun=autorun,
                 view_id=view_id,
                 task_params=task_params,
+                allow_parallel_tasks=allow_parallel_tasks,
+                allow_override_branch_in_task=allow_override_branch_in_task,
+                runner_tag=runner_tag,
             )
         except Exception as e:
             self.handle_error(e, f"creating template '{name}' in project {project_id}")
@@ -180,6 +189,9 @@ class TemplateTools(BaseTool):
         autorun: Optional[bool] = None,
         view_id: Optional[int] = None,
         task_params: Optional[dict[str, Any]] = None,
+        allow_parallel_tasks: Optional[bool] = None,
+        allow_override_branch_in_task: Optional[bool] = None,
+        runner_tag: Optional[str] = None,
     ) -> dict[str, Any]:
         """Update an existing template.
 
@@ -212,6 +224,11 @@ class TemplateTools(BaseTool):
                 - limit: Default limit (list of hosts/groups)
                 - tags: Default tags (list)
                 - skip_tags: Default skip tags (list)
+            allow_parallel_tasks: Allow parallel tasks (optional)
+            allow_override_branch_in_task: Allow overriding the git branch in task (optional)
+            runner_tag: Runner tag (optional)
+
+        Fields not passed keep their current value.
 
         Returns:
             Empty dict on success
@@ -239,6 +256,9 @@ class TemplateTools(BaseTool):
                 autorun=autorun,
                 view_id=view_id,
                 task_params=task_params,
+                allow_parallel_tasks=allow_parallel_tasks,
+                allow_override_branch_in_task=allow_override_branch_in_task,
+                runner_tag=runner_tag,
             )
         except Exception as e:
             self.handle_error(e, f"updating template {template_id}")

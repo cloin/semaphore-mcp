@@ -428,6 +428,9 @@ class SemaphoreAPIClient:
         autorun: bool = False,
         view_id: Optional[int] = None,
         task_params: Optional[dict[str, Any]] = None,
+        allow_parallel_tasks: bool = False,
+        allow_override_branch_in_task: bool = False,
+        runner_tag: Optional[str] = None,
     ) -> dict[str, Any]:
         """Create a new template for a project.
 
@@ -459,6 +462,9 @@ class SemaphoreAPIClient:
                 - limit: Default limit (list of hosts/groups)
                 - tags: Default tags (list)
                 - skip_tags: Default skip tags (list)
+            allow_parallel_tasks: Allow several tasks of this template to run at once
+            allow_override_branch_in_task: Allow overriding the git branch in task
+            runner_tag: Runner tag
 
         Returns:
             Created template information
@@ -474,6 +480,8 @@ class SemaphoreAPIClient:
             "suppress_success_alerts": suppress_success_alerts,
             "app": app,
             "autorun": autorun,
+            "allow_parallel_tasks": allow_parallel_tasks,
+            "allow_override_branch_in_task": allow_override_branch_in_task,
         }
 
         if description is not None:
@@ -496,6 +504,8 @@ class SemaphoreAPIClient:
             payload["view_id"] = view_id
         if task_params is not None:
             payload["task_params"] = task_params
+        if runner_tag is not None:
+            payload["runner_tag"] = runner_tag
 
         return self._request("POST", f"project/{project_id}/templates", json=payload)
 
@@ -522,6 +532,9 @@ class SemaphoreAPIClient:
         autorun: Optional[bool] = None,
         view_id: Optional[int] = None,
         task_params: Optional[dict[str, Any]] = None,
+        allow_parallel_tasks: Optional[bool] = None,
+        allow_override_branch_in_task: Optional[bool] = None,
+        runner_tag: Optional[str] = None,
     ) -> dict[str, Any]:
         """Update an existing template.
 
@@ -554,6 +567,9 @@ class SemaphoreAPIClient:
                 - limit: Default limit (list of hosts/groups)
                 - tags: Default tags (list)
                 - skip_tags: Default skip tags (list)
+            allow_parallel_tasks: Allow parallel tasks (optional)
+            allow_override_branch_in_task: Allow overriding branch (optional)
+            runner_tag: Runner tag (optional)
 
         Returns:
             Empty dict on success (204 response)
@@ -561,31 +577,13 @@ class SemaphoreAPIClient:
         # Fetch existing template to preserve unmodified fields
         existing = self.get_template(project_id, template_id)
 
-        # Build payload starting from existing values
+        # PUT replaces the whole template, so start from every existing field
+        # (including ones this client does not know about) and only override
+        # what the caller explicitly passed.
         payload: dict[str, Any] = {
+            **existing,
             "id": template_id,
             "project_id": project_id,
-            "name": existing.get("name", ""),
-            "playbook": existing.get("playbook", ""),
-            "inventory_id": existing.get("inventory_id", 0),
-            "repository_id": existing.get("repository_id", 0),
-            "environment_id": existing.get("environment_id", 0),
-            "description": existing.get("description", ""),
-            "arguments": existing.get("arguments", ""),
-            "allow_override_args_in_task": existing.get(
-                "allow_override_args_in_task", False
-            ),
-            "suppress_success_alerts": existing.get("suppress_success_alerts", False),
-            "app": existing.get("app", ""),
-            "git_branch": existing.get("git_branch", ""),
-            "survey_vars": existing.get("survey_vars", []),
-            "vaults": existing.get("vaults", []),
-            "type": existing.get("type", ""),
-            "start_version": existing.get("start_version", ""),
-            "build_template_id": existing.get("build_template_id"),
-            "autorun": existing.get("autorun", False),
-            "view_id": existing.get("view_id"),
-            "task_params": existing.get("task_params", {}),
         }
 
         # Override with specified updates
@@ -599,6 +597,9 @@ class SemaphoreAPIClient:
             payload["repository_id"] = repository_id
         if environment_id is not None:
             payload["environment_id"] = environment_id
+            # Semaphore prefers environment_ids over environment_id when both
+            # are sent, so drop the copied list for the override to apply.
+            payload.pop("environment_ids", None)
         if description is not None:
             payload["description"] = description
         if arguments is not None:
@@ -627,6 +628,12 @@ class SemaphoreAPIClient:
             payload["view_id"] = view_id
         if task_params is not None:
             payload["task_params"] = task_params
+        if allow_parallel_tasks is not None:
+            payload["allow_parallel_tasks"] = allow_parallel_tasks
+        if allow_override_branch_in_task is not None:
+            payload["allow_override_branch_in_task"] = allow_override_branch_in_task
+        if runner_tag is not None:
+            payload["runner_tag"] = runner_tag
 
         return self._request(
             "PUT", f"project/{project_id}/templates/{template_id}", json=payload

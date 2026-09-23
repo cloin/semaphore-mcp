@@ -322,3 +322,22 @@ class TestTemplateTools:
             await template_tools.get_template(project_id, template_id)
 
         assert "Error during getting template" in str(excinfo.value)
+
+    @pytest.mark.asyncio
+    async def test_update_template_passes_allow_parallel_tasks(self, template_tools):
+        """The MCP tool forwards allow_parallel_tasks to the API client."""
+        template_tools.semaphore.update_template.return_value = {}
+        await template_tools.update_template(1, 45, allow_parallel_tasks=True)
+        kwargs = template_tools.semaphore.update_template.call_args.kwargs
+        assert kwargs["allow_parallel_tasks"] is True
+        assert kwargs["git_branch"] is None
+
+    @pytest.mark.asyncio
+    async def test_create_template_passes_allow_parallel_tasks(self, template_tools):
+        """The MCP tool forwards allow_parallel_tasks to the API client."""
+        template_tools.semaphore.create_template.return_value = {"id": 1}
+        await template_tools.create_template(
+            1, "t", "p.yml", 1, 1, 1, allow_parallel_tasks=True
+        )
+        kwargs = template_tools.semaphore.create_template.call_args.kwargs
+        assert kwargs["allow_parallel_tasks"] is True
