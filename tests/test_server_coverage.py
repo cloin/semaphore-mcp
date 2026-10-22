@@ -5,6 +5,8 @@ These tests focus on server startup and configuration methods.
 
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from semaphore_mcp.server import SemaphoreMCPServer, start_server
 
 
@@ -209,3 +211,16 @@ class TestSemaphoreMCPServerCoverage:
         for method in required_methods:
             assert hasattr(server, method), f"Server missing method: {method}"
             assert callable(getattr(server, method)), f"Server {method} is not callable"
+
+    @pytest.mark.asyncio
+    async def test_raw_output_tool_returns_log_once(self):
+        """The log comes back as one text block, not also as structured content."""
+        server = SemaphoreMCPServer("http://test.example.com", "test-token")
+        log = "TASK [x]\nok: [host]\n"
+        with patch.object(server.semaphore, "get_task_raw_output", return_value=log):
+            result = await server.mcp.call_tool(
+                "get_task_raw_output", {"project_id": 1, "task_id": 2}
+            )
+
+        assert not isinstance(result, tuple), "structured content duplicates the log"
+        assert [block.text for block in result] == [log]

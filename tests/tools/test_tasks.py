@@ -199,6 +199,7 @@ class TestTaskTools:
             message=None,
             arguments=None,
             inventory_id=None,
+            skip_galaxy_install=None,
         )
 
     @pytest.mark.asyncio
@@ -217,6 +218,44 @@ class TestTaskTools:
 
         assert task_tools.semaphore.run_task.call_args.kwargs["arguments"] == (
             '["-e", "body=hello"]'
+        )
+
+    @pytest.mark.asyncio
+    async def test_run_task_inherits_template_skip_galaxy_install(self, task_tools):
+        """Like the UI, an omitted value follows the template default.
+
+        Semaphore treats a missing task value as false when the template allows
+        overriding it, which would run Galaxy install against the template's intent.
+        """
+        task_tools.semaphore.get_template.return_value = {
+            "task_params": {
+                "skip_galaxy_install": True,
+                "allow_override_skip_galaxy_install": True,
+            }
+        }
+        task_tools.semaphore.run_task.return_value = {"id": 7}
+
+        await task_tools.run_task(template_id=17, project_id=3)
+
+        task_tools.semaphore.get_template.assert_called_once_with(3, 17)
+        assert (
+            task_tools.semaphore.run_task.call_args.kwargs["skip_galaxy_install"]
+            is True
+        )
+
+    @pytest.mark.asyncio
+    async def test_run_task_explicit_skip_galaxy_install_wins(self, task_tools):
+        """An explicit value is sent as-is without consulting the template."""
+        task_tools.semaphore.run_task.return_value = {"id": 7}
+
+        await task_tools.run_task(
+            template_id=17, project_id=3, skip_galaxy_install=False
+        )
+
+        task_tools.semaphore.get_template.assert_not_called()
+        assert (
+            task_tools.semaphore.run_task.call_args.kwargs["skip_galaxy_install"]
+            is False
         )
 
     @pytest.mark.asyncio
@@ -260,6 +299,7 @@ class TestTaskTools:
             message=None,
             arguments=None,
             inventory_id=None,
+            skip_galaxy_install=None,
         )
 
     @pytest.mark.asyncio
@@ -431,6 +471,7 @@ class TestTaskTools:
             message=None,
             arguments=None,
             inventory_id=None,
+            skip_galaxy_install=None,
         )
 
         # Check the result structure for immediate URL response
@@ -500,6 +541,7 @@ class TestTaskTools:
             message=None,
             arguments=None,
             inventory_id=None,
+            skip_galaxy_install=None,
         )
         task_tools._monitor_task_startup.assert_called_once_with(project_id, task_id)
 

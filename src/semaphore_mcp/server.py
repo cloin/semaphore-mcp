@@ -142,7 +142,8 @@ class SemaphoreMCPServer:
         self.mcp.tool()(self.task_tools.get_waiting_tasks)
 
         # LLM-based failure analysis tools
-        self.mcp.tool()(self.task_tools.get_task_raw_output)
+        # Plain text only: structured output would repeat the whole log as {"result": ...}
+        self.mcp.tool(structured_output=False)(self.task_tools.get_task_raw_output)
         self.mcp.tool()(self.task_tools.analyze_task_failure)
         self.mcp.tool()(self.task_tools.bulk_analyze_failures)
 

@@ -18,6 +18,7 @@ class TestTaskToolsCoverage:
     async def task_tools(self):
         """Create TaskTools instance with mock semaphore client."""
         mock_semaphore = MagicMock()
+        mock_semaphore.get_template.return_value = {}
         return TaskTools(mock_semaphore)
 
     @pytest.mark.asyncio
@@ -92,6 +93,7 @@ class TestTaskToolsCoverage:
             message=None,
             arguments=None,
             inventory_id=None,
+            skip_galaxy_install=None,
         )
 
     @pytest.mark.asyncio
@@ -120,6 +122,7 @@ class TestTaskToolsCoverage:
             message=None,
             arguments=None,
             inventory_id=None,
+            skip_galaxy_install=None,
         )
 
     @pytest.mark.asyncio
@@ -402,6 +405,7 @@ class TestTaskToolsCoverage:
             message=None,
             arguments=None,
             inventory_id=None,
+            skip_galaxy_install=None,
         )
 
     @pytest.mark.asyncio

@@ -215,7 +215,13 @@ class TestEnvironmentTools:
         # Verify the result
         assert result == mock_created
         environment_tools.semaphore.create_inventory.assert_called_once_with(
-            project_id, name, inventory_data, "static"
+            project_id,
+            name,
+            inventory_data,
+            "static",
+            ssh_key_id=None,
+            become_key_id=None,
+            repository_id=None,
         )
 
     @pytest.mark.asyncio
@@ -239,7 +245,13 @@ class TestEnvironmentTools:
 
         assert result == mock_created
         environment_tools.semaphore.create_inventory.assert_called_once_with(
-            project_id, name, inventory_path, "file"
+            project_id,
+            name,
+            inventory_path,
+            "file",
+            ssh_key_id=None,
+            become_key_id=None,
+            repository_id=None,
         )
 
     @pytest.mark.asyncio
@@ -269,7 +281,14 @@ class TestEnvironmentTools:
         # Verify the result
         assert result == mock_updated
         environment_tools.semaphore.update_inventory.assert_called_once_with(
-            project_id, inventory_id, name, inventory_data, "static"
+            project_id,
+            inventory_id,
+            name,
+            inventory_data,
+            None,
+            ssh_key_id=None,
+            become_key_id=None,
+            repository_id=None,
         )
 
     @pytest.mark.asyncio
@@ -298,7 +317,14 @@ class TestEnvironmentTools:
 
         assert result == mock_updated
         environment_tools.semaphore.update_inventory.assert_called_once_with(
-            project_id, inventory_id, name, inventory_path, "file"
+            project_id,
+            inventory_id,
+            name,
+            inventory_path,
+            "file",
+            ssh_key_id=None,
+            become_key_id=None,
+            repository_id=None,
         )
 
     @pytest.mark.asyncio
@@ -402,7 +428,14 @@ class TestEnvironmentTools:
         # Verify the result
         assert result == mock_updated
         environment_tools.semaphore.update_inventory.assert_called_once_with(
-            project_id, inventory_id, None, inventory_data, "static"
+            project_id,
+            inventory_id,
+            None,
+            inventory_data,
+            None,
+            ssh_key_id=None,
+            become_key_id=None,
+            repository_id=None,
         )
 
     @pytest.mark.asyncio

@@ -29,7 +29,10 @@ from semaphore_mcp.tools.views import ViewTools
 @pytest.fixture
 def mock_semaphore_client():
     """Create a mock SemaphoreUI API client."""
-    return MagicMock()
+    client = MagicMock()
+    # run_task reads the template's task_params; default to a template without any
+    client.get_template.return_value = {}
+    return client
 
 
 # =============================================================================

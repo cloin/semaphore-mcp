@@ -175,7 +175,14 @@ class TestEnvironmentToolsCoverage:
         assert result["id"] == 1
         # Verify the call was made with None values
         env_tools.semaphore.update_inventory.assert_called_once_with(
-            1, 1, None, None, "static"
+            1,
+            1,
+            None,
+            None,
+            None,
+            ssh_key_id=None,
+            become_key_id=None,
+            repository_id=None,
         )
 
     @pytest.mark.asyncio
@@ -197,7 +204,13 @@ class TestEnvironmentToolsCoverage:
 
         assert result["id"] == 1
         env_tools.semaphore.create_inventory.assert_called_once_with(
-            1, "test", "", "static"
+            1,
+            "test",
+            "",
+            "static",
+            ssh_key_id=None,
+            become_key_id=None,
+            repository_id=None,
         )
 
     @pytest.mark.asyncio
