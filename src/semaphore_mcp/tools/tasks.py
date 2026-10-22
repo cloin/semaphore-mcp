@@ -218,6 +218,7 @@ class TaskTools(BaseTool):
         message: Optional[str] = None,
         arguments: TaskArguments = None,
         inventory_id: Optional[int] = None,
+        skip_galaxy_install: Optional[bool] = None,
         follow: bool = False,
     ) -> dict[str, Any]:
         """Run a task from a template with optional 30-second monitoring.
@@ -235,6 +236,8 @@ class TaskTools(BaseTool):
             message: Task description/message
             arguments: Additional CLI arguments as a JSON string or string list
             inventory_id: Override inventory to use
+            skip_galaxy_install: Skip the Galaxy install step. Defaults to the
+                template's task_params.skip_galaxy_install, as the Semaphore UI does.
             follow: Enable 30-second monitoring for startup verification (default: False)
 
         Returns:
@@ -246,6 +249,7 @@ class TaskTools(BaseTool):
 
             - limit: requires task_params={"allow_override_limit": true}
             - inventory_id: requires task_params={"allow_override_inventory": true}
+            - skip_galaxy_install: requires task_params={"allow_override_skip_galaxy_install": true}
 
             Without these settings, the parameter will be ignored silently.
 
@@ -318,6 +322,14 @@ class TaskTools(BaseTool):
                 serialized_arguments = (
                     json.dumps(arguments) if isinstance(arguments, list) else arguments
                 )
+                if skip_galaxy_install is None:
+                    # When the template allows overriding, Semaphore treats an
+                    # omitted value as false and runs Galaxy install even if
+                    # the template skips it, so send the template default.
+                    template = self.semaphore.get_template(project_id, template_id)
+                    skip_galaxy_install = (template.get("task_params") or {}).get(
+                        "skip_galaxy_install"
+                    )
                 task_result = self.semaphore.run_task(
                     project_id,
                     template_id,
@@ -331,6 +343,7 @@ class TaskTools(BaseTool):
                     message=message,
                     arguments=serialized_arguments,
                     inventory_id=inventory_id,
+                    skip_galaxy_install=skip_galaxy_install,
                 )
 
                 # Extract task ID for URL generation

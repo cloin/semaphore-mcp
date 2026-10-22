@@ -336,6 +336,36 @@ class TestSemaphoreAPIClientComprehensive:
             # Semaphore API expects environment as JSON string
             assert kwargs["json"]["environment"] == json.dumps(environment)
 
+    def test_run_task_sends_ansible_options_in_params(self, mock_client):
+        """Semaphore ignores top-level dry_run/diff/debug; they must go in params."""
+        with patch.object(mock_client, "_request", return_value={"id": 1}) as req:
+            mock_client.run_task(
+                1,
+                2,
+                limit="web1, web2",
+                dry_run=True,
+                diff=True,
+                debug=False,
+                skip_galaxy_install=True,
+            )
+            payload = req.call_args.kwargs["json"]
+            assert payload == {
+                "template_id": 2,
+                "params": {
+                    "limit": ["web1", "web2"],
+                    "dry_run": True,
+                    "diff": True,
+                    "debug": False,
+                    "skip_galaxy_install": True,
+                },
+            }
+
+    def test_run_task_without_options_sends_no_params(self, mock_client):
+        """Unset options are omitted so template defaults still apply."""
+        with patch.object(mock_client, "_request", return_value={"id": 1}) as req:
+            mock_client.run_task(1, 2)
+            assert req.call_args.kwargs["json"] == {"template_id": 2}
+
     def test_stop_task(self, mock_client):
         """Test stop_task method."""
         mock_response = {"status": "stopped"}
@@ -714,76 +744,82 @@ class TestSemaphoreAPIClientComprehensive:
                 "inventory": inventory_path,
             }
 
-    def test_update_inventory_name_only(self, mock_client):
-        """Test update_inventory method with name only."""
-        mock_response = {"id": 1, "name": "updated"}
-        with patch.object(
-            mock_client, "_request", return_value=mock_response
-        ) as mock_request:
-            result = mock_client.update_inventory(1, 1, "updated")
-            assert result == mock_response
-            # Verify only name was updated
-            args, kwargs = mock_request.call_args
-            assert "json" in kwargs
-            assert kwargs["json"]["type"] == "static"
-            assert kwargs["json"]["name"] == "updated"
-            assert "inventory" not in kwargs["json"]  # inventory_data not included
-
-    def test_update_inventory_data_only(self, mock_client):
-        """Test update_inventory method with inventory_data only."""
-        mock_response = {"id": 1, "name": "test"}
-        inventory_data = "[webservers]\nlocalhost"
-        with patch.object(
-            mock_client, "_request", return_value=mock_response
-        ) as mock_request:
-            result = mock_client.update_inventory(1, 1, inventory_data=inventory_data)
-            assert result == mock_response
-            # Verify inventory_data was included
-            args, kwargs = mock_request.call_args
-            assert "json" in kwargs
-            assert kwargs["json"]["type"] == "static"
-            assert kwargs["json"]["inventory"] == inventory_data
-            assert "name" not in kwargs["json"]  # name not included
-
-    def test_update_inventory_both(self, mock_client):
-        """Test update_inventory method with both name and inventory_data."""
-        mock_response = {"id": 1, "name": "updated"}
-        inventory_data = "[webservers]\nlocalhost"
-        with patch.object(
-            mock_client, "_request", return_value=mock_response
-        ) as mock_request:
-            result = mock_client.update_inventory(1, 1, "updated", inventory_data)
-            assert result == mock_response
-            # Verify both were included
-            args, kwargs = mock_request.call_args
-            assert "json" in kwargs
-            assert kwargs["json"]["type"] == "static"
-            assert kwargs["json"]["name"] == "updated"
-            assert kwargs["json"]["inventory"] == inventory_data
-
-    def test_update_inventory_with_file_type(self, mock_client):
-        """Test update_inventory method with a file-backed inventory."""
-        mock_response = {"id": 1, "name": "updated"}
-        inventory_path = "inventories/hosts.ini"
-        with patch.object(
-            mock_client, "_request", return_value=mock_response
-        ) as mock_request:
-            result = mock_client.update_inventory(
-                1,
-                1,
-                "updated",
-                inventory_path,
+    def test_create_inventory_with_credentials_and_repository(self, mock_client):
+        """Credential and repository IDs are sent so file inventories are usable."""
+        with patch.object(mock_client, "_request", return_value={"id": 9}) as req:
+            mock_client.create_inventory(
+                3,
+                "test-wg",
+                "linux/ansible/inventory/test-wg.yml",
                 inventory_type="file",
+                ssh_key_id=5,
+                become_key_id=6,
+                repository_id=3,
             )
-            assert result == mock_response
-            args, kwargs = mock_request.call_args
-            assert args == ("PUT", "project/1/inventory/1")
-            assert kwargs["json"] == {
+            assert req.call_args.kwargs["json"] == {
+                "name": "test-wg",
                 "type": "file",
-                "project_id": 1,
-                "id": 1,
-                "name": "updated",
-                "inventory": inventory_path,
+                "project_id": 3,
+                "inventory": "linux/ansible/inventory/test-wg.yml",
+                "ssh_key_id": 5,
+                "become_key_id": 6,
+                "repository_id": 3,
+            }
+
+    def test_update_inventory_preserves_unspecified_fields(self, mock_client):
+        """A partial update keeps the existing type, credentials and repository."""
+        existing = {
+            "id": 9,
+            "project_id": 3,
+            "name": "old",
+            "type": "file",
+            "inventory": "inventories/hosts.yml",
+            "ssh_key_id": 5,
+            "become_key_id": 6,
+            "repository_id": 3,
+            "runner_tag": "edge",
+        }
+        with (
+            patch.object(mock_client, "get_inventory", return_value=existing),
+            patch.object(mock_client, "_request", return_value={}) as req,
+        ):
+            mock_client.update_inventory(3, 9, name="new")
+            args, kwargs = req.call_args
+            assert args == ("PUT", "project/3/inventory/9")
+            assert kwargs["json"] == {**existing, "name": "new"}
+
+    def test_update_inventory_overrides_specified_fields(self, mock_client):
+        """Passed values replace existing ones, including credentials and type."""
+        existing = {
+            "id": 9,
+            "project_id": 3,
+            "name": "old",
+            "type": "static",
+            "inventory": "[all]\nhost1",
+            "ssh_key_id": 5,
+            "become_key_id": None,
+            "repository_id": None,
+        }
+        with (
+            patch.object(mock_client, "get_inventory", return_value=existing),
+            patch.object(mock_client, "_request", return_value={}) as req,
+        ):
+            mock_client.update_inventory(
+                3,
+                9,
+                inventory_data="inventories/hosts.yml",
+                inventory_type="file",
+                ssh_key_id=7,
+                become_key_id=8,
+                repository_id=3,
+            )
+            assert req.call_args.kwargs["json"] == {
+                **existing,
+                "type": "file",
+                "inventory": "inventories/hosts.yml",
+                "ssh_key_id": 7,
+                "become_key_id": 8,
+                "repository_id": 3,
             }
 
     def test_delete_inventory(self, mock_client):

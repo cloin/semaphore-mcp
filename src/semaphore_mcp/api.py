@@ -860,6 +860,7 @@ class SemaphoreAPIClient:
         message: Optional[str] = None,
         arguments: Optional[str] = None,
         inventory_id: Optional[int] = None,
+        skip_galaxy_install: Optional[bool] = None,
     ) -> dict[str, Any]:
         """
         Run a task using a template.
@@ -877,6 +878,8 @@ class SemaphoreAPIClient:
             message: Task description/message
             arguments: Additional CLI arguments
             inventory_id: Override inventory to use
+            skip_galaxy_install: Skip the Galaxy install step (applied by
+                Semaphore only when the template allows overriding it)
 
         Returns:
             Task information
@@ -885,14 +888,6 @@ class SemaphoreAPIClient:
         if environment:
             # Semaphore API expects environment as a JSON string, not a dict
             payload["environment"] = json.dumps(environment)
-        if limit:
-            payload["limit"] = limit
-        if dry_run is not None:
-            payload["dry_run"] = dry_run
-        if diff is not None:
-            payload["diff"] = diff
-        if debug is not None:
-            payload["debug"] = debug
         if playbook:
             payload["playbook"] = playbook
         if git_branch:
@@ -903,6 +898,22 @@ class SemaphoreAPIClient:
             payload["arguments"] = arguments
         if inventory_id is not None:
             payload["inventory_id"] = inventory_id
+
+        # Semaphore reads Ansible run options only from "params"; top-level
+        # dry_run/diff/debug fields are silently ignored.
+        params: dict[str, Any] = {}
+        if limit:
+            params["limit"] = [host.strip() for host in limit.split(",")]
+        if dry_run is not None:
+            params["dry_run"] = dry_run
+        if diff is not None:
+            params["diff"] = diff
+        if debug is not None:
+            params["debug"] = debug
+        if skip_galaxy_install is not None:
+            params["skip_galaxy_install"] = skip_galaxy_install
+        if params:
+            payload["params"] = params
 
         return self._request("POST", f"project/{project_id}/tasks", json=payload)
 
@@ -1035,24 +1046,41 @@ class SemaphoreAPIClient:
         name: str,
         inventory_data: str,
         inventory_type: str = "static",
+        ssh_key_id: Optional[int] = None,
+        become_key_id: Optional[int] = None,
+        repository_id: Optional[int] = None,
     ) -> dict[str, Any]:
         """Create a new inventory item for a project.
 
         Args:
             project_id: Project ID
             name: Inventory name
-            inventory_data: Inventory content (for "static") or file path on the
-                Semaphore server (for "file")
+            inventory_data: Inventory content (for "static") or file path (for
+                "file"); the path is inside repository_id when set, otherwise on
+                the Semaphore server
             inventory_type: Semaphore inventory type, such as "static",
                 "static-yaml", or "file". Defaults to "static".
+            ssh_key_id: Access key used to connect to hosts (optional)
+            become_key_id: Access key used for privilege escalation (optional)
+            repository_id: Repository holding a "file" inventory (optional)
 
         Returns:
             Created inventory information
         """
-        payload = {"name": name, "type": inventory_type, "project_id": project_id}
+        payload: dict[str, Any] = {
+            "name": name,
+            "type": inventory_type,
+            "project_id": project_id,
+        }
 
         if inventory_data:
             payload["inventory"] = inventory_data
+        if ssh_key_id is not None:
+            payload["ssh_key_id"] = ssh_key_id
+        if become_key_id is not None:
+            payload["become_key_id"] = become_key_id
+        if repository_id is not None:
+            payload["repository_id"] = repository_id
 
         return self._request("POST", f"project/{project_id}/inventory", json=payload)
 
@@ -1062,9 +1090,14 @@ class SemaphoreAPIClient:
         inventory_id: int,
         name: Optional[str] = None,
         inventory_data: Optional[str] = None,
-        inventory_type: str = "static",
+        inventory_type: Optional[str] = None,
+        ssh_key_id: Optional[int] = None,
+        become_key_id: Optional[int] = None,
+        repository_id: Optional[int] = None,
     ) -> dict[str, Any]:
         """Update an existing inventory item.
+
+        Fields left as None keep their current values.
 
         Args:
             project_id: Project ID
@@ -1073,24 +1106,35 @@ class SemaphoreAPIClient:
             inventory_data: Inventory content for "static", or file path for "file"
                 (optional)
             inventory_type: Semaphore inventory type, such as "static",
-                "static-yaml", or "file". Always sent in the payload; pass the
-                existing type if you don't intend to change it. Defaults to
-                "static".
+                "static-yaml", or "file" (optional)
+            ssh_key_id: Access key used to connect to hosts (optional)
+            become_key_id: Access key used for privilege escalation (optional)
+            repository_id: Repository holding a "file" inventory (optional)
 
         Returns:
             Updated inventory information
         """
-        payload = {
-            "type": inventory_type,
-            "project_id": project_id,
+        # PUT replaces the whole inventory, so start from every existing field
+        # (credentials, repository, runner tag) and only override what was passed.
+        existing = self.get_inventory(project_id, inventory_id)
+        payload: dict[str, Any] = {
+            **existing,
             "id": inventory_id,
+            "project_id": project_id,
         }
 
         if name is not None:
             payload["name"] = name
-
         if inventory_data is not None:
             payload["inventory"] = inventory_data
+        if inventory_type is not None:
+            payload["type"] = inventory_type
+        if ssh_key_id is not None:
+            payload["ssh_key_id"] = ssh_key_id
+        if become_key_id is not None:
+            payload["become_key_id"] = become_key_id
+        if repository_id is not None:
+            payload["repository_id"] = repository_id
 
         return self._request(
             "PUT", f"project/{project_id}/inventory/{inventory_id}", json=payload

@@ -154,23 +154,36 @@ class EnvironmentTools(BaseTool):
         name: str,
         inventory_data: str,
         inventory_type: str = "static",
+        ssh_key_id: Optional[int] = None,
+        become_key_id: Optional[int] = None,
+        repository_id: Optional[int] = None,
     ) -> dict[str, Any]:
         """Create a new inventory item.
 
         Args:
             project_id: ID of the project
             name: Inventory name
-            inventory_data: Inventory content (for "static") or file path on the
-                Semaphore server (for "file")
+            inventory_data: Inventory content (for "static") or file path (for
+                "file"); the path is inside repository_id when set, otherwise on
+                the Semaphore server
             inventory_type: Semaphore inventory type, such as "static",
                 "static-yaml", or "file". Defaults to "static".
+            ssh_key_id: Access key ID used to connect to hosts (optional)
+            become_key_id: Access key ID used for privilege escalation (optional)
+            repository_id: Repository ID holding a "file" inventory (optional)
 
         Returns:
             Created inventory item details
         """
         try:
             return self.semaphore.create_inventory(
-                project_id, name, inventory_data, inventory_type
+                project_id,
+                name,
+                inventory_data,
+                inventory_type,
+                ssh_key_id=ssh_key_id,
+                become_key_id=become_key_id,
+                repository_id=repository_id,
             )
         except Exception as e:
             self.handle_error(e, f"creating inventory '{name}' in project {project_id}")
@@ -181,9 +194,12 @@ class EnvironmentTools(BaseTool):
         inventory_id: int,
         name: Optional[str] = None,
         inventory_data: Optional[str] = None,
-        inventory_type: str = "static",
+        inventory_type: Optional[str] = None,
+        ssh_key_id: Optional[int] = None,
+        become_key_id: Optional[int] = None,
+        repository_id: Optional[int] = None,
     ) -> dict[str, Any]:
-        """Update an existing inventory item.
+        """Update an existing inventory item; omitted fields keep their current values.
 
         Args:
             project_id: ID of the project
@@ -192,15 +208,24 @@ class EnvironmentTools(BaseTool):
             inventory_data: Inventory content for "static", or file path for "file"
                 (optional)
             inventory_type: Semaphore inventory type, such as "static",
-                "static-yaml", or "file". Defaults to "static"; pass the existing
-                type if you don't intend to change it.
+                "static-yaml", or "file" (optional)
+            ssh_key_id: Access key ID used to connect to hosts (optional)
+            become_key_id: Access key ID used for privilege escalation (optional)
+            repository_id: Repository ID holding a "file" inventory (optional)
 
         Returns:
             Updated inventory item details
         """
         try:
             return self.semaphore.update_inventory(
-                project_id, inventory_id, name, inventory_data, inventory_type
+                project_id,
+                inventory_id,
+                name,
+                inventory_data,
+                inventory_type,
+                ssh_key_id=ssh_key_id,
+                become_key_id=become_key_id,
+                repository_id=repository_id,
             )
         except Exception as e:
             self.handle_error(e, f"updating inventory {inventory_id}")
