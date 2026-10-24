@@ -860,6 +860,7 @@ class SemaphoreAPIClient:
         message: Optional[str] = None,
         arguments: Optional[str] = None,
         inventory_id: Optional[int] = None,
+        params: Optional[dict[str, Any]] = None,
     ) -> dict[str, Any]:
         """
         Run a task using a template.
@@ -877,6 +878,8 @@ class SemaphoreAPIClient:
             message: Task description/message
             arguments: Additional CLI arguments
             inventory_id: Override inventory to use
+            params: App-specific task params (AnsibleTaskParams or
+                TerraformTaskParams), sent as the task ``params`` object
 
         Returns:
             Task information
@@ -903,6 +906,8 @@ class SemaphoreAPIClient:
             payload["arguments"] = arguments
         if inventory_id is not None:
             payload["inventory_id"] = inventory_id
+        if params:
+            payload["params"] = params
 
         return self._request("POST", f"project/{project_id}/tasks", json=payload)
 
