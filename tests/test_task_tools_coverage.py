@@ -92,6 +92,7 @@ class TestTaskToolsCoverage:
             message=None,
             arguments=None,
             inventory_id=None,
+            params=None,
         )
 
     @pytest.mark.asyncio
@@ -120,6 +121,7 @@ class TestTaskToolsCoverage:
             message=None,
             arguments=None,
             inventory_id=None,
+            params=None,
         )
 
     @pytest.mark.asyncio
@@ -402,6 +404,7 @@ class TestTaskToolsCoverage:
             message=None,
             arguments=None,
             inventory_id=None,
+            params=None,
         )
 
     @pytest.mark.asyncio

@@ -199,6 +199,7 @@ class TestTaskTools:
             message=None,
             arguments=None,
             inventory_id=None,
+            params=None,
         )
 
     @pytest.mark.asyncio
@@ -218,6 +219,16 @@ class TestTaskTools:
         assert task_tools.semaphore.run_task.call_args.kwargs["arguments"] == (
             '["-e", "body=hello"]'
         )
+
+    @pytest.mark.asyncio
+    async def test_run_task_passes_params(self, task_tools):
+        """App-specific params are forwarded unchanged."""
+        task_tools.semaphore.run_task.return_value = {"id": 7, "status": "waiting"}
+        params = {"destroy": True, "auto_approve": True}
+
+        await task_tools.run_task(template_id=30, project_id=3, params=params)
+
+        assert task_tools.semaphore.run_task.call_args.kwargs["params"] == params
 
     @pytest.mark.asyncio
     async def test_run_task_without_project_id(self, task_tools):
@@ -260,6 +271,7 @@ class TestTaskTools:
             message=None,
             arguments=None,
             inventory_id=None,
+            params=None,
         )
 
     @pytest.mark.asyncio
@@ -431,6 +443,7 @@ class TestTaskTools:
             message=None,
             arguments=None,
             inventory_id=None,
+            params=None,
         )
 
         # Check the result structure for immediate URL response
@@ -500,6 +513,7 @@ class TestTaskTools:
             message=None,
             arguments=None,
             inventory_id=None,
+            params=None,
         )
         task_tools._monitor_task_startup.assert_called_once_with(project_id, task_id)
 

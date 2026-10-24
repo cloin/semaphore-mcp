@@ -218,6 +218,7 @@ class TaskTools(BaseTool):
         message: Optional[str] = None,
         arguments: TaskArguments = None,
         inventory_id: Optional[int] = None,
+        params: Optional[dict[str, Any]] = None,
         follow: bool = False,
     ) -> dict[str, Any]:
         """Run a task from a template with optional 30-second monitoring.
@@ -235,6 +236,10 @@ class TaskTools(BaseTool):
             message: Task description/message
             arguments: Additional CLI arguments as a JSON string or string list
             inventory_id: Override inventory to use
+            params: App-specific task params sent as the task ``params`` object.
+                Ansible: debug, debug_level, dry_run, diff, limit, tags, skip_tags,
+                skip_galaxy_install. Terraform/OpenTofu/Terragrunt: plan, destroy,
+                auto_approve, upgrade, reconfigure.
             follow: Enable 30-second monitoring for startup verification (default: False)
 
         Returns:
@@ -261,6 +266,11 @@ class TaskTools(BaseTool):
 
             # Dry run with diff to preview changes
             result = await run_task(template_id=5, dry_run=True, diff=True)
+
+            # Destroy infrastructure of a Terraform template without confirmation
+            result = await run_task(
+                template_id=7, params={"destroy": True, "auto_approve": True}
+            )
         """
         try:
             # If project_id is not provided, we need to find it
@@ -331,6 +341,7 @@ class TaskTools(BaseTool):
                     message=message,
                     arguments=serialized_arguments,
                     inventory_id=inventory_id,
+                    params=params,
                 )
 
                 # Extract task ID for URL generation
